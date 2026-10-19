@@ -7,6 +7,8 @@ public class Scanner {
     private int  current;
     private int row = 1;
     private int column = 1;
+    private int tokenRow = row;
+    private int tokenColumn = column;
 
     private static final Map<String, TokenType> keywords;
         static {
@@ -63,7 +65,7 @@ public class Scanner {
                 advance();
             }
             String n = new String(input, start, current-start);
-            return new Token (TokenType.NUMBER, n);
+            return createToken(TokenType.NUMBER, n);
     }
 
     private boolean isAlpha(char ch) {
@@ -84,7 +86,7 @@ public class Scanner {
         if(type == null){
             type = TokenType.IDENT;
         }
-        return new Token(type, id);
+        return createToken(type, id);
     }
 
     private void skipWhiteSpace(){
@@ -96,7 +98,7 @@ public class Scanner {
     }
 
     private void skipLineComments(){
-            while (peek() != '\n' && peekNext() != '\0') {
+            while (peek() != '\n' && peek() != '\0') {
                 advance();
             }
     }
@@ -136,7 +138,7 @@ public class Scanner {
             }
             String s = new String(input, start, current-start, StandardCharsets.UTF_8);
             advance();
-            return new Token (TokenType.STRING, s);
+            return createToken(TokenType.STRING, s);
     }
 
     private Token slashToken() {
@@ -148,12 +150,19 @@ public class Scanner {
             return nextToken();
         } else {
             advance();
-            return new Token (TokenType.SLASH, "/");
+            return createToken(TokenType.SLASH, "/");
         }
+    }
+
+    private Token createToken( TokenType type, String lexema) {
+            return new Token(type, lexema, tokenRow, tokenColumn);
     }
 
     public Token nextToken() {
             skipWhiteSpace();
+            tokenRow = row;
+            tokenColumn = column;
+
             char ch = peek();
 
             if(isAlpha(ch)) {
@@ -162,33 +171,33 @@ public class Scanner {
 
             if(ch == '0') {
                 advance();
-                return new Token (TokenType.NUMBER, Character.toString(ch));
+                return createToken(TokenType.NUMBER, Character.toString(ch));
             } else if (Character.isDigit(ch)) {
                 return number();
             }
             switch (ch) {
-                case '+': advance(); return new Token (TokenType.PLUS, "+");
-                case '-': advance(); return new Token (TokenType.MINUS, "-");
-                case '=': advance(); return new Token (TokenType.EQ, "=");
-                case '*': advance(); return new Token (TokenType.ASTERISK, "*");
-                case '|': advance(); return new Token (TokenType.OR, "|");
-                case '~': advance(); return new Token (TokenType.NOT, "~");
-                case '.': advance(); return new Token (TokenType.DOT, ".");
-                case '&': advance(); return new Token (TokenType.AND, "&");
-                case '>': advance(); return new Token (TokenType.GT, ">");
-                case '<': advance(); return new Token (TokenType.LT, "<");
-                case '(': advance(); return new Token (TokenType.LPAREN, "(");
-                case ')': advance(); return new Token (TokenType.RPAREN, ")");
-                case '[': advance(); return new Token (TokenType.LBRACKET, "[");
-                case ']': advance(); return new Token (TokenType.RBRACKET, "]");
-                case ';': advance(); return new Token (TokenType.SEMICOLON, ";");
-                case ',': advance(); return new Token (TokenType.COMMA, ",");
-                case '{': advance(); return new Token (TokenType.LBRACE, "{");
-                case '}': advance(); return new Token (TokenType.RBRACE, "}");
+                case '+': advance(); return createToken(TokenType.PLUS, "+");
+                case '-': advance(); return createToken(TokenType.MINUS, "-");
+                case '=': advance(); return createToken(TokenType.EQ, "=");
+                case '*': advance(); return createToken(TokenType.ASTERISK, "*");
+                case '|': advance(); return createToken(TokenType.OR, "|");
+                case '~': advance(); return createToken(TokenType.NOT, "~");
+                case '.': advance(); return createToken(TokenType.DOT, ".");
+                case '&': advance(); return createToken(TokenType.AND, "&");
+                case '>': advance(); return createToken(TokenType.GT, ">");
+                case '<': advance(); return createToken (TokenType.LT, "<");
+                case '(': advance(); return createToken(TokenType.LPAREN, "(");
+                case ')': advance(); return createToken(TokenType.RPAREN, ")");
+                case '[': advance(); return createToken(TokenType.LBRACKET, "[");
+                case ']': advance(); return createToken(TokenType.RBRACKET, "]");
+                case ';': advance(); return createToken(TokenType.SEMICOLON, ";");
+                case ',': advance(); return createToken(TokenType.COMMA, ",");
+                case '{': advance(); return createToken(TokenType.LBRACE, "{");
+                case '}': advance(); return createToken(TokenType.RBRACE, "}");
                 case '/': return slashToken(); // fiz a função separada para identificar o token "/"
                 case '"': return string(); // essa função também foi feita separadamente para reconhecer strings
 
-                case '\0': return new Token (TokenType.EOF, "EOF");
+                case '\0': return createToken(TokenType.EOF, "EOF");
                 default: throw new Error("error léxico em: " + ch);
 
 

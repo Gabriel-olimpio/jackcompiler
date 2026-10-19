@@ -33,7 +33,10 @@ public class Parser {
         if(currentToken.type == typePretend) {
             return advance();
         } else {
-            throw new IllegalStateException("Esperado: " + typePretend + "; Encontrado: " + currentToken.type + ", lexema: " + currentToken.lexeme);
+            throw new IllegalStateException("Esperado: " + typePretend + "; Encontrado: "
+                    + currentToken.type + ", lexema: "
+                    + currentToken.lexeme + ", linha: " + currentToken.row
+                    + ", coluna: " + currentToken.column);
         }
 
     }

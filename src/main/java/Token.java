@@ -1,10 +1,14 @@
 public class Token {
     final TokenType type;
     final String lexeme;
+    final int row;
+    final int column;
 
-    public  Token (TokenType type, String lexeme) {
+    public  Token (TokenType type, String lexeme, int row, int column) {
         this.type = type;
         this.lexeme = lexeme;
+        this.row = row;
+        this.column = column;
     }
 
     public boolean isSymbol (TokenType type) {
