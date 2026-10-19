@@ -5,6 +5,8 @@ import java.util.Map;
 public class Scanner {
     private byte[] input;
     private int  current;
+    private int row = 1;
+    private int column = 1;
 
     private static final Map<String, TokenType> keywords;
         static {
@@ -38,9 +40,21 @@ public class Scanner {
 
     private void advance(){
             char ch = peek();
-            if(ch != '\0') {
-                current++;
+            if(ch == '\0') {
+                return;
             }
+            if(ch == '\r') {
+                row++;
+                column = 1;
+            } else if (ch == '\n') {
+                if(current == 0 || input[current - 1]  != '\r') {
+                    row++;
+                }
+                column = 1;
+            } else {
+                column++;
+            }
+            current++;
     }
 
     private Token number() {
