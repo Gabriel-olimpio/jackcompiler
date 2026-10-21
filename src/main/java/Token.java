@@ -4,14 +4,14 @@ public class Token {
     final int row;
     final int column;
 
-    public  Token (TokenType type, String lexeme, int row, int column) {
+    public Token (TokenType type, String lexeme, int row, int column) {
         this.type = type;
         this.lexeme = lexeme;
         this.row = row;
         this.column = column;
     }
 
-    public boolean isSymbol (TokenType type) {
+    public static boolean isSymbol(TokenType type) {
         return switch (type) {
             case RPAREN, LPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET,  COMMA,
                  SEMICOLON, DOT, PLUS, MINUS, ASTERISK,
