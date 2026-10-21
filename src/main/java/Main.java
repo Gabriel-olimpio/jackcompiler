@@ -1,9 +1,14 @@
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Main {
     public static void main(String[] args) throws java.io.IOException {
 
+        String input = "class Main{}";
+        Parser par = new Parser(input.getBytes(StandardCharsets.UTF_8));
+        String resultado = par.parse();
+        System.out.println(resultado);
 //        if (args.length != 1) {
 //            System.err.println("Uso: java Main <arquivo.jack>");
 //            System.exit(1);
