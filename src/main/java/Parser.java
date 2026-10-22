@@ -38,7 +38,6 @@ public class Parser {
                     + currentToken.lexeme + ", linha: " + currentToken.row
                     + ", coluna: " + currentToken.column);
         }
-
     }
 
     private void parseClass(){
@@ -70,39 +69,35 @@ public class Parser {
         return output.getOutput();
     }
 
-    public void parseType(){
+    private void parseType(){
         TokenType tk = currentToken.type;
         switch (tk){
-            case TokenType.INT -> consume(TokenType.INT);
-            case TokenType.CHAR -> consume(TokenType.CHAR);
-            case TokenType.BOOLEAN -> consume(TokenType.BOOLEAN);
-            case TokenType.IDENT -> consume(TokenType.IDENT);
-            default ->  throw new IllegalStateException("Esperado: " + tk + "; Encontrado: " + currentToken + ", linha: " + currentToken.row + ", coluna: " + currentToken.column);
+            case TokenType.INT -> output.writeToken(consume(TokenType.INT));
+            case TokenType.CHAR -> output.writeToken(consume(TokenType.CHAR));
+            case TokenType.BOOLEAN -> output.writeToken(consume(TokenType.BOOLEAN));
+            case TokenType.IDENT -> output.writeToken(consume(TokenType.IDENT));
+            default ->  throw new IllegalStateException("Esperado: int, char, boolean ou nome de classe; "  + "; Encontrado: " + currentToken.type + " e lexema: " + currentToken.lexeme + ", linha: " + currentToken.row + ", coluna: " + currentToken.column);
         }
 
     }
 
-    public void parseClassVarDec(){
+    private void parseClassVarDec(){
         output.openTag("classVarDec");
 
         if (currentToken.type == TokenType.STATIC) {
-            Token tokenStatic = consume(currentToken.type);
-            output.writeToken(tokenStatic);
+            output.writeToken(consume(TokenType.STATIC));
         } else {
-            Token tokenField = consume(TokenType.FIELD);
-            output.writeToken(tokenField);
+            output.writeToken(consume(TokenType.FIELD));
         }
+
         parseType();
-        consume(TokenType.IDENT);
+        output.writeToken(consume(TokenType.IDENT));
 
         while(currentToken.type == TokenType.COMMA) {
-            Token tokenComma = consume(TokenType.COMMA);
-            output.writeToken(tokenComma);
-            Token tokenIdent = consume(TokenType.IDENT);
-            output.writeToken(tokenIdent);
+            output.writeToken(consume(TokenType.COMMA));
+            output.writeToken(consume(TokenType.IDENT));
         }
-        Token tokenSemicolon = consume(TokenType.SEMICOLON);
-        output.writeToken(tokenSemicolon);
+        output.writeToken(consume(TokenType.SEMICOLON));
 
         output.closeTag("classVarDec");
     }
