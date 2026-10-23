@@ -43,22 +43,21 @@ public class Parser {
     private void parseClass(){
         output.openTag("class");
 
+        output.writeToken(consume(TokenType.CLASS));
 
-        Token tokenClass = consume(TokenType.CLASS);
-        output.writeToken(tokenClass);
+        output.writeToken(consume(TokenType.IDENT));
 
-        Token tokenIdent = consume(TokenType.IDENT);
-        output.writeToken(tokenIdent);
-
-        Token tokenLbrace = consume(TokenType.LBRACE);
-        output.writeToken(tokenLbrace);
+        output.writeToken(consume(TokenType.LBRACE));
 
         while(currentToken.type == TokenType.STATIC || currentToken.type == TokenType.FIELD) {
             parseClassVarDec();
         }
 
-        Token tokenRbrace = consume(TokenType.RBRACE);
-        output.writeToken(tokenRbrace);
+        while(currentToken.type == TokenType.CONSTRUCTOR || currentToken.type == TokenType.FUNCTION || currentToken.type == TokenType.METHOD) {
+            parseSubroutineDec();
+        }
+
+        output.writeToken(consume(TokenType.RBRACE));
 
         output.closeTag("class");
     }
@@ -119,4 +118,42 @@ public class Parser {
         output.closeTag("parameterList");
 
     }
+
+    private void parseSubroutineDec(){
+        output.openTag("subroutineDec");
+
+        if(currentToken.type == TokenType.CONSTRUCTOR || currentToken.type == TokenType.METHOD || currentToken.type == TokenType.FUNCTION){
+            output.writeToken(consume(currentToken.type));
+        } else {
+            throw new IllegalStateException("Categorias esperadas: METHOD, FUNCTION ou CONSTRUCTOR ");
+        }
+        if(currentToken.type == TokenType.VOID){
+            output.writeToken(consume(TokenType.VOID));
+        } else {
+            parseType();
+        }
+
+        output.writeToken(consume(TokenType.IDENT));
+        output.writeToken(consume(TokenType.LPAREN));
+        parseParameterList();
+        output.writeToken(consume(TokenType.RPAREN));
+
+        parseSubroutineBody();
+
+        output.closeTag("subroutineDec");
+    }
+
+    private void parseSubroutineBody(){
+        output.openTag("subRoutineBody");
+
+        output.writeToken(consume(TokenType.LBRACE));
+
+        output.openTag("statements");
+        output.closeTag("statements");
+
+        output.writeToken(consume(TokenType.RBRACE));
+
+        output.closeTag("subRoutineBody");
+    }
+
 }
