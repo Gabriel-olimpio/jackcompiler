@@ -101,4 +101,22 @@ public class Parser {
 
         output.closeTag("classVarDec");
     }
+
+    private void parseParameterList(){
+        output.openTag("parameterList");
+
+        if(currentToken.type != TokenType.RPAREN) {
+            parseType();
+            output.writeToken(consume(TokenType.IDENT));
+
+            while(currentToken.type == TokenType.COMMA) {
+                output.writeToken(consume(TokenType.COMMA));
+                parseType();
+                output.writeToken(consume(TokenType.IDENT));
+            }
+        }
+
+        output.closeTag("parameterList");
+
+    }
 }
