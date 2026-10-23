@@ -75,7 +75,13 @@ public class Parser {
             case TokenType.CHAR -> output.writeToken(consume(TokenType.CHAR));
             case TokenType.BOOLEAN -> output.writeToken(consume(TokenType.BOOLEAN));
             case TokenType.IDENT -> output.writeToken(consume(TokenType.IDENT));
-            default ->  throw new IllegalStateException("Esperado: int, char, boolean ou nome de classe; "  + "; Encontrado: " + currentToken.type + " e lexema: " + currentToken.lexeme + ", linha: " + currentToken.row + ", coluna: " + currentToken.column);
+            default ->  throw new IllegalStateException("Esperado: int, char, boolean ou nome de classe; "
+                    + "; Encontrado: "
+                    + currentToken.type
+                    + " e lexema: " + currentToken.lexeme
+                    + ", linha: " + currentToken.row
+                    + ", coluna: "
+                    + currentToken.column);
         }
 
     }
@@ -125,7 +131,8 @@ public class Parser {
         if(currentToken.type == TokenType.CONSTRUCTOR || currentToken.type == TokenType.METHOD || currentToken.type == TokenType.FUNCTION){
             output.writeToken(consume(currentToken.type));
         } else {
-            throw new IllegalStateException("Categorias esperadas: METHOD, FUNCTION ou CONSTRUCTOR ");
+            throw new IllegalStateException("Esperado: CONSTRUCTOR, METHOD OU FUNCTION; " + "Encotrado: " + currentToken.type + ", lexema: " + currentToken.lexeme
+            + ", linha: " + currentToken.row + ", coluna: " + currentToken.column);
         }
         if(currentToken.type == TokenType.VOID){
             output.writeToken(consume(TokenType.VOID));
@@ -144,16 +151,93 @@ public class Parser {
     }
 
     private void parseSubroutineBody(){
-        output.openTag("subRoutineBody");
+        output.openTag("subroutineBody");
 
         output.writeToken(consume(TokenType.LBRACE));
 
-        output.openTag("statements");
-        output.closeTag("statements");
+        while(currentToken.type == TokenType.VAR) {
+            parseVarDec();
+        }
+
+        parseStatements(); // abertura dos <statements>
+
 
         output.writeToken(consume(TokenType.RBRACE));
 
-        output.closeTag("subRoutineBody");
+        output.closeTag("subroutineBody");
     }
 
+    private void parseVarDec() {
+        output.openTag("varDec");
+
+        output.writeToken(consume(TokenType.VAR));
+
+        parseType();
+
+        output.writeToken(consume(TokenType.IDENT));
+
+        while(currentToken.type == TokenType.COMMA) {
+            output.writeToken(consume(TokenType.COMMA));
+            output.writeToken(consume(TokenType.IDENT));
+        }
+
+        output.writeToken(consume(TokenType.SEMICOLON));
+
+        output.closeTag("varDec");
+
+    }
+
+    private void parseReturn() {
+        output.openTag("returnStatement");
+
+        output.writeToken(consume(TokenType.RETURN));
+
+        if(currentToken.type != TokenType.SEMICOLON){
+            parseExpression();
+        }
+        output.writeToken(consume(TokenType.SEMICOLON));
+
+        output.closeTag("returnStatement");
+    }
+
+    private void parseStatements(){
+        output.openTag("statements");
+
+        while(currentToken.type == TokenType.RETURN) {
+            parseReturn();
+        }
+
+        output.closeTag("statements");
+    }
+
+    private void parseExpression() {
+        output.openTag("expression");
+
+        parseTerm();
+
+        output.closeTag("expression");
+    }
+
+    private void parseTerm(){
+        output.openTag("term");
+
+        TokenType type = currentToken.type;
+        switch (type) {
+            case TokenType.NUMBER -> output.writeToken(consume(TokenType.NUMBER));
+            case TokenType.STRING -> output.writeToken(consume(TokenType.STRING));
+            case TokenType.IDENT -> output.writeToken(consume(TokenType.IDENT));
+            case TokenType.TRUE -> output.writeToken(consume(TokenType.TRUE));
+            case TokenType.FALSE -> output.writeToken(consume(TokenType.FALSE));
+            case TokenType.NULL -> output.writeToken(consume(TokenType.NULL));
+            case TokenType.THIS -> output.writeToken(consume(TokenType.THIS));
+            default -> throw new IllegalStateException("Esperado: NUMBER, STRING, IDENT, TRUE, FALSE, NULL ou THIS; "
+                    + "; Encontrado: " + currentToken.type
+                    + " e lexema: " + currentToken.lexeme
+                    + ", linha: " + currentToken.row
+                    + ", coluna: " + currentToken.column);
+
+        }
+
+        output.closeTag("term");
+    }
 }
