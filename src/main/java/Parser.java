@@ -41,11 +41,11 @@ public class Parser {
     }
 
     private boolean isOp(TokenType type) {
-        if(currentToken.type == TokenType.PLUS || currentToken.type == TokenType.MINUS
-                || currentToken.type == TokenType.SLASH || currentToken.type == TokenType.ASTERISK
-                || currentToken.type == TokenType.AND || currentToken.type == TokenType.OR
-                || currentToken.type == TokenType.LT || currentToken.type == TokenType.GT
-                || currentToken.type == TokenType.EQ) {
+        if(type == TokenType.PLUS || type == TokenType.MINUS
+                || type == TokenType.SLASH || type == TokenType.ASTERISK
+                || type == TokenType.AND || type == TokenType.OR
+                || type == TokenType.LT || type == TokenType.GT
+                || type == TokenType.EQ) {
             return true;
         }
         return false;
@@ -214,8 +214,13 @@ public class Parser {
     private void parseStatements(){
         output.openTag("statements");
 
-        while(currentToken.type == TokenType.RETURN) {
-            parseReturn();
+        while(currentToken.type == TokenType.RETURN || currentToken.type == TokenType.LET ) {
+            if(currentToken.type == TokenType.RETURN){
+                parseReturn();
+            } else {
+                parseLet();
+            }
+
         }
 
         output.closeTag("statements");
@@ -234,6 +239,17 @@ public class Parser {
         output.closeTag("expression");
     }
 
+    private void caseLparen(){
+        output.writeToken(consume(TokenType.LPAREN));
+        parseExpression();
+        output.writeToken(consume(TokenType.RPAREN));
+    }
+
+    private void caseMinusOrNot(TokenType type){
+        output.writeToken(consume(type));
+        parseTerm();
+    }
+
     private void parseTerm(){
         output.openTag("term");
 
@@ -246,14 +262,35 @@ public class Parser {
             case TokenType.FALSE -> output.writeToken(consume(TokenType.FALSE));
             case TokenType.NULL -> output.writeToken(consume(TokenType.NULL));
             case TokenType.THIS -> output.writeToken(consume(TokenType.THIS));
-            default -> throw new IllegalStateException("Esperado: NUMBER, STRING, IDENT, TRUE, FALSE, NULL ou THIS; "
+            case TokenType.LPAREN -> caseLparen();
+            case TokenType.NOT, TokenType.MINUS -> caseMinusOrNot(type);
+
+            default -> throw new IllegalStateException("Esperado: NUMBER, STRING, IDENT, TRUE, FALSE, NULL, THIS, LPAREN, MINUS ou NOT; "
                     + "; Encontrado: " + currentToken.type
                     + " e lexema: " + currentToken.lexeme
                     + ", linha: " + currentToken.row
                     + ", coluna: " + currentToken.column);
 
         }
-
         output.closeTag("term");
+    }
+
+    private void parseLet(){
+        output.openTag("letStatement");
+
+        output.writeToken(consume(TokenType.LET));
+        output.writeToken(consume(TokenType.IDENT));
+
+        if(currentToken.type == TokenType.LBRACKET) {
+            output.writeToken(consume(TokenType.LBRACKET));
+            parseExpression();
+            output.writeToken(consume(TokenType.RBRACKET));
+        }
+
+        output.writeToken(consume(TokenType.EQ));
+        parseExpression();
+        output.writeToken(consume(TokenType.SEMICOLON));
+
+        output.closeTag("letStatement");
     }
 }
