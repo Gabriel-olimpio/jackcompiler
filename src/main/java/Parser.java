@@ -40,6 +40,17 @@ public class Parser {
         }
     }
 
+    private boolean isOp(TokenType type) {
+        if(currentToken.type == TokenType.PLUS || currentToken.type == TokenType.MINUS
+                || currentToken.type == TokenType.SLASH || currentToken.type == TokenType.ASTERISK
+                || currentToken.type == TokenType.AND || currentToken.type == TokenType.OR
+                || currentToken.type == TokenType.LT || currentToken.type == TokenType.GT
+                || currentToken.type == TokenType.EQ) {
+            return true;
+        }
+        return false;
+    }
+
     private void parseClass(){
         output.openTag("class");
 
@@ -214,6 +225,11 @@ public class Parser {
         output.openTag("expression");
 
         parseTerm();
+
+        while(isOp(currentToken.type)) {
+            output.writeToken(consume(currentToken.type));
+            parseTerm();
+        }
 
         output.closeTag("expression");
     }
