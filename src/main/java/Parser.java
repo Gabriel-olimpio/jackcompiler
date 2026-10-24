@@ -213,12 +213,13 @@ public class Parser {
 
     private void parseStatements(){
         output.openTag("statements");
-
-        while(currentToken.type == TokenType.RETURN || currentToken.type == TokenType.LET ) {
-            if(currentToken.type == TokenType.RETURN){
-                parseReturn();
-            } else {
-                parseLet();
+        while(currentToken.type == TokenType.RETURN || currentToken.type == TokenType.LET || currentToken.type == TokenType.IF || currentToken.type == TokenType.WHILE) {
+            TokenType tk = currentToken.type;
+            switch(tk) {
+                case TokenType.RETURN -> parseReturn();
+                case TokenType.LET -> parseLet();
+                case TokenType.IF -> parseIf();
+                case TokenType.WHILE -> parseWhile();
             }
 
         }
@@ -293,4 +294,47 @@ public class Parser {
 
         output.closeTag("letStatement");
     }
+
+    private void parseIf(){
+        output.openTag("ifStatement");
+
+        // if(){} -> if + ( + expr + ) + { + statements + }
+        output.writeToken(consume(TokenType.IF));
+        output.writeToken(consume(TokenType.LPAREN));
+        parseExpression();
+        output.writeToken(consume(TokenType.RPAREN));
+
+        output.writeToken(consume(TokenType.LBRACE));
+        parseStatements();
+        output.writeToken(consume(TokenType.RBRACE));
+
+        // else{} -> else + { + statements + }
+        if(currentToken.type == TokenType.ELSE) {
+            output.writeToken(consume(TokenType.ELSE));
+            output.writeToken(consume(TokenType.LBRACE));
+            parseStatements();
+            output.writeToken(consume(TokenType.RBRACE));
+
+        }
+
+        output.closeTag("ifStatement");
+
+    }
+
+    private void parseWhile() {
+        output.openTag("whileStatement");
+
+        // while(){}
+        output.writeToken(consume(TokenType.WHILE));
+        output.writeToken(consume(TokenType.LPAREN));
+        parseExpression();
+        output.writeToken(consume(TokenType.RPAREN));
+
+        output.writeToken(consume(TokenType.LBRACE));
+        parseStatements();
+        output.writeToken(consume(TokenType.RBRACE));
+
+        output.closeTag("whileStatement");
+    }
+
 }
