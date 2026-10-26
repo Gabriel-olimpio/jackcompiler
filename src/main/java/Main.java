@@ -5,23 +5,20 @@ import java.nio.file.Path;
 public class Main {
     public static void main(String[] args) throws java.io.IOException {
 
-        String input = "class Main{}";
-        Parser par = new Parser(input.getBytes(StandardCharsets.UTF_8));
-        String resultado = par.parse();
-        System.out.println(resultado);
-//        if (args.length != 1) {
-//            System.err.println("Uso: java Main <arquivo.jack>");
-//            System.exit(1);
-//        }
-//
-//        Scanner scan = new Scanner(Files.readAllBytes(Path.of(args[0])));
-//
-//        System.out.println("<tokens>");
-//        for (Token tk = scan.nextToken(); tk.type != TokenType.EOF; tk = scan.nextToken()) {
-//            System.out.println(tk);
-//        }
-//        System.out.println("</tokens>");
+        if(args.length != 2) {
+            System.err.println("Uso: java Main <entrada.jack> <saida.xml>");
+            System.exit(1);
+        }
 
+        Path inputPath = Path.of(args[0]);
+        Path outputPath = Path.of(args[1]);
+
+        byte[] bytesRead = Files.readAllBytes(inputPath);
+
+        Parser par = new Parser(bytesRead);
+        String result = par.parse();
+        Files.writeString(outputPath, result, StandardCharsets.UTF_8);
+        System.out.println("XML foi gerado; path: " + outputPath);
 
 
     }
