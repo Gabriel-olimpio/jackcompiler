@@ -213,13 +213,17 @@ public class Parser {
 
     private void parseStatements(){
         output.openTag("statements");
-        while(currentToken.type == TokenType.RETURN || currentToken.type == TokenType.LET || currentToken.type == TokenType.IF || currentToken.type == TokenType.WHILE) {
-            TokenType tk = currentToken.type;
-            switch(tk) {
+        while(currentToken.type == TokenType.RETURN
+                || currentToken.type == TokenType.LET
+                || currentToken.type == TokenType.IF
+                || currentToken.type == TokenType.WHILE
+                || currentToken.type == TokenType.DO) {
+            switch(currentToken.type) {
                 case TokenType.RETURN -> parseReturn();
                 case TokenType.LET -> parseLet();
                 case TokenType.IF -> parseIf();
                 case TokenType.WHILE -> parseWhile();
+                case TokenType.DO -> parseDo();
             }
 
         }
@@ -251,6 +255,19 @@ public class Parser {
         parseTerm();
     }
 
+    private void caseIdent(){
+        output.writeToken(consume(TokenType.IDENT));
+
+        if(currentToken.type == TokenType.LBRACKET){
+            output.writeToken(consume(TokenType.LBRACKET));
+            parseExpression();
+            output.writeToken(consume(TokenType.RBRACKET));
+        } else if (currentToken.type == TokenType.LPAREN || currentToken.type == TokenType.DOT) {
+            parseCallAfterName();
+        }
+
+    }
+
     private void parseTerm(){
         output.openTag("term");
 
@@ -258,7 +275,7 @@ public class Parser {
         switch (type) {
             case TokenType.NUMBER -> output.writeToken(consume(TokenType.NUMBER));
             case TokenType.STRING -> output.writeToken(consume(TokenType.STRING));
-            case TokenType.IDENT -> output.writeToken(consume(TokenType.IDENT));
+            case TokenType.IDENT -> caseIdent();
             case TokenType.TRUE -> output.writeToken(consume(TokenType.TRUE));
             case TokenType.FALSE -> output.writeToken(consume(TokenType.FALSE));
             case TokenType.NULL -> output.writeToken(consume(TokenType.NULL));
@@ -324,7 +341,7 @@ public class Parser {
     private void parseWhile() {
         output.openTag("whileStatement");
 
-        // while(){}
+        // while(){} -> while + ( + expr + ) + { + statements + }
         output.writeToken(consume(TokenType.WHILE));
         output.writeToken(consume(TokenType.LPAREN));
         parseExpression();
@@ -335,6 +352,49 @@ public class Parser {
         output.writeToken(consume(TokenType.RBRACE));
 
         output.closeTag("whileStatement");
+    }
+
+    private void parseExpressionList(){
+        output.openTag("expressionList");
+
+        if(currentToken.type != TokenType.RPAREN) {
+            parseExpression();
+
+            while(currentToken.type == TokenType.COMMA){
+                output.writeToken(consume(TokenType.COMMA));
+                parseExpression();
+            }
+        }
+
+
+
+        output.closeTag("expressionList");
+    }
+
+    private void parseCallAfterName(){
+        if(currentToken.type == TokenType.DOT){
+            output.writeToken(consume(TokenType.DOT));
+            output.writeToken(consume(TokenType.IDENT));
+
+        }
+
+        output.writeToken(consume(TokenType.LPAREN));
+        parseExpressionList();
+        output.writeToken(consume(TokenType.RPAREN));
+    }
+
+
+    private void parseDo(){
+        output.openTag("doStatement");
+
+        output.writeToken(consume(TokenType.DO));
+        output.writeToken(consume(TokenType.IDENT));
+
+        parseCallAfterName();
+
+        output.writeToken(consume(TokenType.SEMICOLON));
+
+        output.closeTag("doStatement");
     }
 
 }
