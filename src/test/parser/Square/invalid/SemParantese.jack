@@ -1,0 +1,7 @@
+
+class Teste {
+    function void main( {
+        return;
+    }
+}
+
