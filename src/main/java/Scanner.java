@@ -2,6 +2,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class Scanner {
     private byte[] input;
     private int  current;
@@ -61,7 +62,15 @@ public class Scanner {
 
     private Token number() {
             int start = current;
-            while(Character.isDigit(peek())) {
+            int value = 0;
+
+            while(isDigit(peek())) {
+                int digit = peek() - '0';
+                value = value*10 + digit;
+
+                if(value > 32767){
+                    throw  new IllegalArgumentException("Valor ultrapassou 32767: linha: " + tokenRow + ", coluna: " + tokenColumn);
+                }
                 advance();
             }
             String n = new String(input, start, current-start);
@@ -73,7 +82,11 @@ public class Scanner {
     }
 
     private boolean isAlphaNumeric(char ch) {
-            return isAlpha(ch) || Character.isDigit(ch);
+            return isAlpha(ch) || isDigit(ch);
+    }
+
+    private boolean isDigit(char caractere){
+        return caractere >= '0' && caractere <= '9';
     }
 
     private Token identifier(){
@@ -98,7 +111,7 @@ public class Scanner {
     }
 
     private void skipLineComments(){
-            while (peek() != '\n' && peek() != '\0') {
+            while (peek() != '\n' && peek() != '\0' && peek() != '\r') {
                 advance();
             }
     }
@@ -131,13 +144,22 @@ public class Scanner {
     }
 
     private Token string() {
-            advance();
+            advance(); // consome aspas inicias
             int start = current;
-            while (peek() != '"' && peek() != '\0') {
+
+            while (peek() != '"') {
+
+                if(peek() == '\0'){
+                    throw new IllegalStateException("String não terminada " + "; linha: " + tokenRow + ", coluna: " + tokenColumn);
+                }
+                if(peek() == '\n' || peek() == '\r'){
+                    throw new IllegalStateException("String com quebra de linha; linha: " + tokenRow + ", coluna: " + tokenColumn);
+                }
+
                 advance();
             }
             String s = new String(input, start, current-start, StandardCharsets.UTF_8);
-            advance();
+            advance(); // consome aspas finais
             return createToken(TokenType.STRING, s);
     }
 
@@ -158,6 +180,8 @@ public class Scanner {
             return new Token(type, lexema, tokenRow, tokenColumn);
     }
 
+
+
     public Token nextToken() {
             skipWhiteSpace();
             tokenRow = row;
@@ -169,10 +193,7 @@ public class Scanner {
                 return identifier();
             }
 
-            if(ch == '0') {
-                advance();
-                return createToken(TokenType.NUMBER, Character.toString(ch));
-            } else if (Character.isDigit(ch)) {
+            if(isDigit(ch)) {
                 return number();
             }
             switch (ch) {
@@ -198,7 +219,7 @@ public class Scanner {
                 case '"': return string(); // essa função também foi feita separadamente para reconhecer strings
 
                 case '\0': return createToken(TokenType.EOF, "EOF");
-                default: throw new Error("error léxico em: " + ch);
+                default: throw new Error("error léxico em: " + ch + ", linha: " + tokenRow + ", coluna: " + tokenColumn);
 
 
             }
