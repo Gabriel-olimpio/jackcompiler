@@ -3,206 +3,414 @@
 
 **Analisador Léxico e Sintático da Linguagem Jack**
 
-Projeto desenvolvido para a disciplina de **Compiladores**, com o objetivo de implementar um analisador léxico (Scanner) e um analisador sintático (Parser) para a linguagem Jack, seguindo as especificações do projeto [nand2tetris](https://www.nand2tetris.org/).
+Projeto acadêmico da disciplina de Compiladores, desenvolvido em Java, com base no Project 10 do [nand2tetris](https://www.nand2tetris.org/).
 
-O analisador sintático utiliza os tokens produzidos pelo Scanner para reconhecer as estruturas da linguagem e gerar uma representação em **XML**.
+O projeto implementa duas etapas de análise de programas escritos na linguagem Jack:
 
----
+1. **Scanner:** reconhece os tokens do código-fonte.
+2. **Parser:** consome esses tokens, verifica a gramática Jack e gera uma árvore sintática representada em XML.
 
 ## Integrantes
 
-| Nome | Matrícula |
-|------|-----------|
+| Integrante | Matrícula |
+|---|---|
 | Gabriel André Barreto Olimpio dos Santos | 20260001301 |
 | Hellen Neves Barbosa | 20260001348 |
 
-## Tecnologias utilizadas
+## Tecnologias
 
-| Tecnologia | Utilização |
-|------------|------------|
-| Java 24 | Implementação do Scanner e Parser |
-| Apache Maven | Compilação e gerenciamento do projeto |
-| JUnit 5 | Testes automatizados |
-| Visual Studio Code | Ambiente de desenvolvimento |
+- Java 24
+- Apache Maven
+- JUnit 5
+- Visual Studio Code e IntelliJ IDEA
 
----
+## Estrutura do projeto
 
-## 1. Funcionalidades implementadas
+```text
+src/
+├── main/
+│   └── java/
+│       ├── Main.java
+│       ├── Scanner.java
+│       ├── Parser.java
+│       ├── Token.java
+│       ├── TokenType.java
+│       └── XmlWriter.java
+└── test/
+    ├── java/
+    │   ├── ScannerTest.java
+    │   ├── ScannerXmlTest.java
+    │   ├── ParserTest.java
+    │   ├── ParserOfficialTest.java
+    │   ├── ParserExtraTest.java
+    │   ├── ParserErroTest.java
+    │   └── MainIntegrationTest.java
+    └── parser/
+        ├── Square/
+        ├── ExpressionLessSquare/
+        └── ArrayTest/
+```
 
-### Analisador Léxico (Scanner)
+## 1. Analisador léxico (Scanner)
 
-Responsável por ler o código-fonte Jack e identificar os tokens da linguagem:
+O Scanner lê o código Jack e transforma seus elementos em tokens.
 
-- Palavras-chave (`keyword`);
-- Símbolos (`symbol`);
-- Identificadores (`identifier`);
-- Constantes inteiras (`integerConstant`);
-- Constantes de texto (`stringConstant`).
+As categorias reconhecidas incluem:
 
-### Analisador Sintático (Parser)
+- `keyword`: palavras reservadas;
+- `symbol`: símbolos;
+- `identifier`: identificadores;
+- `integerConstant`: constantes inteiras;
+- `stringConstant`: constantes de texto.
 
-Implementado utilizando a técnica de **descida recursiva (Recursive Descent Parsing)**.
+O Scanner também trata comentários e mantém informações de linha e coluna para auxiliar a identificação de erros.
 
-O Parser reconhece:
+### Validação do Scanner
 
-- Declarações de classes e variáveis;
-- Declarações de funções, métodos e construtores;
-- Listas de parâmetros e variáveis locais;
-- Comandos `let`, `if`, `while`, `do` e `return`;
-- Expressões matemáticas e lógicas;
-- Operadores binários e unários;
-- Chamadas de sub-rotinas e acesso a arrays.
+O Scanner é utilizado internamente pelo Parser. Sua validação independente é realizada pelos testes JUnit.
 
-Também realiza a detecção de erros sintáticos, informando o token esperado, o token encontrado e sua localização (linha e coluna).
+Executar testes básicos:
 
-### Geração de XML
+```powershell
+mvn "-Dtest=ScannerTest" test
+```
 
-O analisador produz um arquivo XML com a estrutura sintática reconhecida.
+Comparar os tokens gerados com os XMLs oficiais:
 
-Exemplo:
+```powershell
+mvn "-Dtest=ScannerXmlTest" test
+```
+
+Os testes `ScannerXmlTest` comparam os tokens dos programas `Main.jack`, `Square.jack` e `SquareGame.jack` com os arquivos de referência `MainT.xml`, `SquareT.xml` e `SquareGameT.xml`.
+
+## 2. Analisador sintático (Parser)
+
+O Parser utiliza a técnica de **descida recursiva (recursive descent parsing)**.
+
+Cada estrutura principal da gramática é reconhecida por um método específico.
+
+Entre os métodos implementados estão:
+
+- `parseClass()`
+- `parseClassVarDec()`
+- `parseSubroutineDec()`
+- `parseParameterList()`
+- `parseSubroutineBody()`
+- `parseVarDec()`
+- `parseStatements()`
+- `parseLet()`
+- `parseIf()`
+- `parseWhile()`
+- `parseDo()`
+- `parseReturn()`
+- `parseExpression()`
+- `parseTerm()`
+- `parseExpressionList()`
+
+### Gramática Jack
+
+As principais regras reconhecidas incluem:
+
+```text
+class:
+  'class' className '{'
+  classVarDec* subroutineDec*
+  '}'
+
+classVarDec:
+  ('static' | 'field') type varName
+  (',' varName)* ';'
+
+subroutineDec:
+  ('constructor' | 'function' | 'method')
+  ('void' | type) subroutineName
+  '(' parameterList ')' subroutineBody
+
+parameterList:
+  (type varName (',' type varName)*)?
+
+subroutineBody:
+  '{' varDec* statements '}'
+
+varDec:
+  'var' type varName (',' varName)* ';'
+
+statements:
+  statement*
+
+statement:
+  letStatement | ifStatement |
+  whileStatement | doStatement |
+  returnStatement
+
+expression:
+  term (op term)*
+
+expressionList:
+  (expression (',' expression)*)?
+```
+
+O Parser também reconhece constantes, operadores unários, expressões entre parênteses, acesso a arrays e chamadas de sub-rotinas.
+
+### Expressões e operadores
+
+As expressões seguem a regra:
+
+`expression: term (op term)*`
+
+Conforme a gramática Jack, o Parser não aplica níveis tradicionais de precedência entre operadores binários. O agrupamento explícito é realizado por parênteses.
+
+### Tratamento de erros
+
+O Parser verifica os tokens esperados por meio de métodos auxiliares, como `consume()`.
+
+Quando encontra uma construção sintaticamente inválida, lança uma exceção com informações sobre o token esperado, o encontrado e a localização.
+
+Exemplo observado durante os testes:
+
+```text
+Esperado: SEMICOLON
+Encontrado: RETURN
+Lexema: return
+Linha: 6
+Coluna: 9
+```
+
+## 3. Geração do XML
+
+O `XmlWriter.java` gera as tags correspondentes à estrutura sintática reconhecida.
+
+Exemplo simplificado:
 
 ```xml
 <class>
-    <keyword> class </keyword>
-    <identifier> Main </identifier>
-    <symbol> { </symbol>
-    ...
-    <symbol> } </symbol>
+<keyword> class </keyword>
+<identifier> Main </identifier>
+<symbol> { </symbol>
+<symbol> } </symbol>
 </class>
 ```
 
-O gerador trata os caracteres especiais de XML, como `&`, `<`, `>` e `"`.
+O gerador realiza o escapamento dos caracteres especiais `&`, `<`, `>` e `"`.
 
----
+O XML preserva a hierarquia das regras, mas não adiciona indentação visual automaticamente.
 
-## 2. Como compilar e executar
+## 4. Compilação e execução
 
 ### Pré-requisitos
 
-Para executar o projeto, é necessário ter instalado:
+- JDK 24 ou superior;
+- Apache Maven.
 
-- **Java JDK 24 ou superior**;
-- **Apache Maven**.
+Verificação:
 
-### Compilação
+```powershell
+java -version
+mvn -version
+```
 
-Abra o terminal na pasta raiz do projeto e execute:
+### Compilar o projeto
 
-```bash
+Na raiz do repositório:
+
+```powershell
 mvn compile
 ```
 
-### Execução do Parser
+### Executar com um arquivo Jack
 
-O programa recebe dois argumentos:
+É possível informar o arquivo de entrada e um nome personalizado para a saída:
 
-1. Caminho do arquivo `.jack` de entrada;
-2. Caminho do arquivo `.xml` de saída.
-
-**Exemplo de execução:**
-
-```bash
+```powershell
 java -cp target/classes Main src/test/parser/Square/Main.jack target/Main-geradoP.xml
 ```
 
-**Arquivos utilizados:**
+Nesse exemplo, o XML será gerado em:
 
-| Tipo | Caminho |
-|------|---------|
-| Entrada | `src/test/parser/Square/Main.jack` |
-| Saída | `target/Main-geradoP.xml` |
+`target/Main-geradoP.xml`
 
-O nome do arquivo XML de saída é definido pelo usuário no segundo argumento.
+### Executar com saída automática
 
----
+Ao informar apenas um arquivo `.jack`, o programa gera um XML com o padrão `XxxP.xml`, na mesma pasta do arquivo de entrada.
 
-## 3. Validação com arquivos oficiais
+Para testar sem sobrescrever referências oficiais, prepare uma pasta separada:
 
-O analisador sintático foi validado utilizando os programas de referência do **nand2tetris**.
+```powershell
+New-Item -ItemType Directory -Force target/exemplo | Out-Null
+Copy-Item src/test/parser/Square/Main.jack target/exemplo/
+```
 
-Os XMLs gerados foram comparados com os arquivos oficiais, considerando a equivalência da estrutura das tags e desconsiderando diferenças de indentação.
+Execute:
 
-### Resultados da validação
+```powershell
+java -cp target/classes Main target/exemplo/Main.jack
+```
 
-| Arquivo Jack | XML de referência | Resultado |
-|--------------|-------------------|-----------|
-| `Main.jack` | `MainP.xml` | Aprovado |
-| `Square.jack` | `SquareP.xml` | Aprovado |
-| `SquareGame.jack` | `SquareGameP.xml` | Aprovado |
+Saída:
 
-**Resultado:** os três testes de comparação estrutural foram aprovados.
+`target/exemplo/MainP.xml`
 
----
+### Executar com uma pasta
 
-## 4. Testes automatizados
+O programa também aceita uma pasta contendo vários arquivos `.jack`.
 
-Os testes foram implementados utilizando **JUnit 5**.
+Prepare a pasta:
+
+```powershell
+New-Item -ItemType Directory -Force target/exemplo-pasta | Out-Null
+Copy-Item src/test/parser/Square/*.jack target/exemplo-pasta/
+```
+
+Execute:
+
+```powershell
+java -cp target/classes Main target/exemplo-pasta
+```
+
+Serão gerados arquivos como:
+
+- `MainP.xml`
+- `SquareP.xml`
+- `SquareGameP.xml`
+
+O programa processa os arquivos `.jack` encontrados diretamente na pasta informada.
+
+**Atenção:** no modo de saída automática, um XML existente não é sobrescrito. Nesse caso, o programa informa o conflito e interrompe o processamento.
+
+## 5. Validação com arquivos oficiais
+
+A análise sintática foi validada utilizando os conjuntos do Project 10 do nand2tetris.
+
+| Conjunto | Arquivo | Resultado |
+|---|---|---|
+| Square | Main.jack | Aprovado |
+| Square | Square.jack | Aprovado |
+| Square | SquareGame.jack | Aprovado |
+| ExpressionLessSquare | Main.jack | Aprovado |
+| ExpressionLessSquare | Square.jack | Aprovado |
+| ExpressionLessSquare | SquareGame.jack | Aprovado |
+| ArrayTest | Main.jack | Aprovado |
+
+As comparações verificam a equivalência do XML produzido em relação às referências, desconsiderando diferenças de formatação previstas nos testes.
+
+## 6. Testes automatizados
+
+Os testes foram desenvolvidos com JUnit 5.
 
 Para executar todos os testes:
 
-```bash
-mvn test
+```powershell
+mvn clean test
 ```
 
-### Testes do Scanner
+### Organização dos testes
 
-**Arquivo:** `ScannerTest.java`
+| Classe | Testes | Finalidade |
+|---|---:|---|
+| ScannerTest | 3 | Reconhecimento de tokens e comentários |
+| ScannerXmlTest | 3 | Comparação com XMLs léxicos oficiais |
+| ParserTest | 3 | Validação com Square |
+| ParserOfficialTest | 4 | Validação com ExpressionLessSquare e ArrayTest |
+| ParserErroTest | 2 | Rejeição de entradas sintaticamente inválidas |
+| ParserExtraTest | 10 | Estruturas sintáticas e erros específicos |
+| MainIntegrationTest | 4 | Execução por arquivo, pasta e geração de XML |
+| **Total** | **29** | **29 aprovados** |
 
-Contém três testes que verificam o reconhecimento de tokens da linguagem Jack.
+### Testes específicos do Parser
 
-### Testes do Parser
+Os testes adicionais verificam:
 
-**Arquivo:** `ParserTest.java`
+- Funções com múltiplos parâmetros;
+- Chamadas sem argumentos;
+- Chamadas com múltiplos argumentos;
+- Leitura e escrita em arrays;
+- Operadores unários;
+- Comandos `if`, `else` e `while`;
+- Escapamento XML e constantes de texto;
+- Expressões com parênteses;
+- Ausência de chave de fechamento;
+- Expressões incompletas.
 
-Contém três testes que verificam a equivalência estrutural dos XMLs gerados com os arquivos oficiais.
+Os testes estruturais verificam a organização e a sequência dos elementos XML, além dos valores dos tokens.
 
-### Testes de erros sintáticos
+### Testes de integração
 
-**Arquivo:** `ParserErroTest.java`
+A classe `MainIntegrationTest` verifica:
 
-Contém dois testes que verificam a rejeição de códigos Jack com erros sintáticos:
+- Processamento de um arquivo individual;
+- Processamento de uma pasta com dois arquivos;
+- Proteção contra sobrescrita de XML;
+- Nome personalizado para o arquivo de saída.
 
-- Ausência de ponto e vírgula em uma instrução `let`;
-- Ausência de fechamento de parêntese na declaração de uma função.
+### Resultado registrado
 
-### Resumo dos resultados
-
-| Classe de teste | Quantidade | Resultado |
-|-----------------|------------|-----------|
-| `ScannerTest` | 3 | Aprovados |
-| `ParserTest` | 3 | Aprovados |
-| `ParserErroTest` | 2 | Aprovados |
-| **Total** | **8** | **8 aprovados** |
-
-**Última validação registrada:** 27/10/2026.
+Última execução completa em **07/11/2026**:
 
 ```text
-Tests run: 8, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 29
+Failures: 0
+Errors: 0
+Skipped: 0
 
 BUILD SUCCESS
 ```
 
----
+Esse resultado corresponde aos casos efetivamente executados e não representa uma comprovação exaustiva de todos os programas possíveis da linguagem Jack.
 
-## 5. Desafios enfrentados
+## 7. Limitações conhecidas
 
-Durante o desenvolvimento do analisador sintático, as principais dificuldades encontradas foram:
+- O projeto realiza análise léxica e sintática, mas ainda não gera código VM.
+- Não realiza análise semântica nem verificação de tipos.
+- A análise sintática é interrompida no primeiro erro identificado.
+- O XML gerado não recebe indentação automática.
+- O processamento de pastas não percorre subpastas recursivamente.
+- No modo automático, arquivos `XxxP.xml` já existentes são preservados, interrompendo a execução em caso de conflito.
+- A interface `Main.java` executa o Parser; a validação independente do Scanner é disponibilizada pelos testes JUnit.
 
-**1. Entender a gramática Jack**
+## 8. Desafios enfrentados
 
-Compreender as regras da linguagem e como as diferentes estruturas se relacionam, principalmente declarações, comandos e expressões.
+### 4. Integração entre Scanner e Parser
+Garantir que o Parser consumisse corretamente os tokens gerados pelo Scanner, utilizando métodos como `advance()`, `peek()` e `consume()`.
 
-**2. Implementar os métodos do Parser**
+### 5. Automatização dos testes
+Criar testes JUnit para comparar os XMLs gerados com os arquivos oficiais do nand2tetris e verificar casos específicos da gramática.
 
-Transformar as regras da gramática em métodos Java, utilizando a técnica de descida recursiva e garantindo o consumo correto dos tokens.
+### 6. Processamento de arquivos e pastas
+Adaptar o `Main.java` para processar arquivos `.jack` individuais ou pastas completas, gerando automaticamente os respectivos arquivos `XxxP.xml`.
 
-**3. Montar a estrutura XML**
+### 7. Tratamento de erros sintáticos
+Identificar tokens inesperados e apresentar mensagens indicando o token esperado, o encontrado, a linha e a coluna do erro.
 
-Entender como organizar as tags XML conforme a gramática, respeitando a hierarquia dos elementos e o formato exigido pelos arquivos oficiais do nand2tetris.
+### 8. Organização do repositório
+Configurar o `.gitignore` e remover arquivos específicos da IDE do versionamento, mantendo apenas os arquivos necessários ao projeto.
 
----
+### Interpretação de identificadores
 
-## 6. Referências
+Uma das dificuldades técnicas foi distinguir as diferentes estruturas que podem começar com um identificador.
 
-- [nand2tetris — Site oficial](https://www.nand2tetris.org/)
+Por exemplo, `x` representa uma variável simples, `a[i]` representa um acesso a array e `obj.metodo()` representa uma chamada de sub-rotina.
+
+Para reconhecer essas construções, o método `caseIdent()` consome o identificador e verifica o token seguinte, direcionando a análise para a estrutura adequada.
+
+### Organização da descida recursiva
+
+Outro desafio foi organizar a interação entre métodos como `parseStatements()`, `parseExpression()` e `parseTerm()`.
+
+O consumo dos tokens precisa respeitar a gramática e identificar corretamente o início e o fim de cada construção.
+
+Um exemplo verificado nos testes foi a ausência de `;` após uma atribuição, situação em que o Parser encontrou `RETURN` quando esperava `SEMICOLON` e apresentou a localização do problema.
+
+### Validação da hierarquia XML
+
+Na comparação inicial do arquivo gerado para `Main.jack` com sua referência, o `git diff` apontou diferenças relacionadas à indentação.
+
+Como a especificação permite diferenças de formatação, foram utilizados testes automatizados para verificar a estrutura XML sem depender da indentação visual.
+
+Também foram adicionados testes específicos para conferir estruturas aninhadas, listas vazias e a ordem dos tokens.
+
+## 10. Referências
+
+- [nand2tetris](https://www.nand2tetris.org/)
+- [Project 10 — Compiler I: Syntax Analysis](https://www.nand2tetris.org/project10)
+- [Especificações da atividade no Notion](https://profsergiocosta.notion.site/JackCompiler-Analisador-sint-tico-3f2cce975093809f8d03f7ec71a8d9c1)
 
