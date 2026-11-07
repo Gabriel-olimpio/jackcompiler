@@ -143,11 +143,48 @@ statement:
   whileStatement | doStatement |
   returnStatement
 
+letStatement:
+  'let' varName ('[' expression ']')? '=' expression ';'
+
+ifStatement:
+  'if' '(' expression ')' '{' statements '}'
+  ('else' '{' statements '}')?
+
+whileStatement:
+  'while' '(' expression ')' '{' statements '}'
+
+doStatement:
+  'do' subroutineCall ';'
+
+returnStatement:
+  'return' expression? ';'
+
 expression:
   term (op term)*
 
+term:
+  integerConstant | stringConstant | keywordConstant |
+  varName | varName '[' expression ']' | subroutineCall |
+  '(' expression ')' | unaryOp term
+
+subroutineCall:
+  subroutineName '(' expressionList ')' |
+  (className | varName) '.' subroutineName '(' expressionList ')'
+
 expressionList:
   (expression (',' expression)*)?
+
+type:
+  'int' | 'char' | 'boolean' | className
+
+keywordConstant:
+  'true' | 'false' | 'null' | 'this'
+
+op:
+  '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='
+
+unaryOp:
+  '-' | '~'
 ```
 
 O Parser também reconhece constantes, operadores unários, expressões entre parênteses, acesso a arrays e chamadas de sub-rotinas.
@@ -331,7 +368,7 @@ Os testes adicionais verificam:
 - Ausência de chave de fechamento;
 - Expressões incompletas.
 
-Os testes estruturais verificam a organização e a sequência dos elementos XML, além dos valores dos tokens.
+Os testes verificam a organização e a sequência dos elementos XML, além dos valores dos tokens, conforme a estratégia de comparação de cada classe de teste.
 
 ### Testes de integração
 
@@ -366,47 +403,51 @@ Esse resultado corresponde aos casos efetivamente executados e não representa u
 - O processamento de pastas não percorre subpastas recursivamente.
 - No modo automático, arquivos `XxxP.xml` já existentes são preservados, interrompendo a execução em caso de conflito.
 - A interface `Main.java` executa o Parser; a validação independente do Scanner é disponibilizada pelos testes JUnit.
+- Na versão atual, o Scanner ainda não valida o intervalo de constantes inteiras de Jack (`0` a `32767`) nem rejeita adequadamente strings sem aspas de fechamento ou com quebra de linha.
 
 ## 8. Desafios enfrentados
 
-### 4. Integração entre Scanner e Parser
-Garantir que o Parser consumisse corretamente os tokens gerados pelo Scanner, utilizando métodos como `advance()`, `peek()` e `consume()`.
+### Integração entre Scanner e Parser
 
-### 5. Automatização dos testes
-Criar testes JUnit para comparar os XMLs gerados com os arquivos oficiais do nand2tetris e verificar casos específicos da gramática.
-
-### 6. Processamento de arquivos e pastas
-Adaptar o `Main.java` para processar arquivos `.jack` individuais ou pastas completas, gerando automaticamente os respectivos arquivos `XxxP.xml`.
-
-### 7. Tratamento de erros sintáticos
-Identificar tokens inesperados e apresentar mensagens indicando o token esperado, o encontrado, a linha e a coluna do erro.
-
-### 8. Organização do repositório
-Configurar o `.gitignore` e remover arquivos específicos da IDE do versionamento, mantendo apenas os arquivos necessários ao projeto.
+Garantir que o Parser consumisse corretamente os tokens do Scanner, utilizando métodos como `advance()`, `peek()`, `match()` e `consume()`.
 
 ### Interpretação de identificadores
 
-Uma das dificuldades técnicas foi distinguir as diferentes estruturas que podem começar com um identificador.
-
-Por exemplo, `x` representa uma variável simples, `a[i]` representa um acesso a array e `obj.metodo()` representa uma chamada de sub-rotina.
-
-Para reconhecer essas construções, o método `caseIdent()` consome o identificador e verifica o token seguinte, direcionando a análise para a estrutura adequada.
+Distinguir variáveis simples (`x`), acessos a arrays (`a[i]`) e chamadas de sub-rotina (`obj.metodo()`). O método `caseIdent()` verifica os tokens seguintes para reconhecer cada construção.
 
 ### Organização da descida recursiva
 
-Outro desafio foi organizar a interação entre métodos como `parseStatements()`, `parseExpression()` e `parseTerm()`.
-
-O consumo dos tokens precisa respeitar a gramática e identificar corretamente o início e o fim de cada construção.
-
-Um exemplo verificado nos testes foi a ausência de `;` após uma atribuição, situação em que o Parser encontrou `RETURN` quando esperava `SEMICOLON` e apresentou a localização do problema.
+Coordenar métodos como `parseStatements()`, `parseExpression()` e `parseTerm()`, respeitando os limites de cada estrutura da gramática Jack.
 
 ### Validação da hierarquia XML
 
-Na comparação inicial do arquivo gerado para `Main.jack` com sua referência, o `git diff` apontou diferenças relacionadas à indentação.
+Diferenciar erros estruturais de diferenças apenas visuais de indentação, utilizando comparações automatizadas com os XMLs oficiais.
 
-Como a especificação permite diferenças de formatação, foram utilizados testes automatizados para verificar a estrutura XML sem depender da indentação visual.
+### Automatização dos testes
 
-Também foram adicionados testes específicos para conferir estruturas aninhadas, listas vazias e a ordem dos tokens.
+Ampliar a validação com JUnit 5, incluindo arquivos oficiais, estruturas específicas e entradas inválidas. A suíte passou a contar com 29 testes aprovados.
+
+### Processamento de arquivos e pastas
+
+Adaptar o `Main.java` para aceitar arquivos `.jack` individuais e diretórios, gerar automaticamente arquivos `XxxP.xml` e preservar saídas já existentes.
+
+### Tratamento de erros sintáticos
+
+Identificar tokens inesperados e informar o token esperado, o encontrado e sua posição (linha e coluna) no código-fonte.
+
+### Organização do repositório
+
+Atualizar o `.gitignore` e retirar arquivos de configuração da IDE do versionamento, mantendo o repositório mais limpo e portável.
+
+## 9. Uso de Inteligência Artificial
+
+Foi utilizado o **ChatGPT, da OpenAI**, como ferramenta de apoio durante o desenvolvimento e a revisão do JackCompiler. Nesta etapa de revisão, foi utilizado o modelo **GPT-6**.
+
+O apoio incluiu esclarecimentos sobre a gramática Jack, sugestões e revisão de testes JUnit, auxílio na identificação de erros, comparação com saídas XML de referência e organização da documentação.
+
+A dupla ficou responsável por analisar e adaptar as sugestões, integrar o código ao projeto, executar os testes e validar os resultados.
+
+**Antes da entrega, os integrantes devem conferir se outros modelos de IA também foram utilizados e complementar esta declaração, se necessário.**
 
 ## 10. Referências
 
