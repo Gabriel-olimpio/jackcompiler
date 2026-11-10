@@ -64,7 +64,7 @@ public class SymbolTable {
     public int varCount(SymbolKind kind){
         switch (kind){
             case SymbolKind.STATIC: return staticCount;
-            case SymbolKind.FIELD: return staticCount;
+            case SymbolKind.FIELD: return fieldCount;
             case SymbolKind.VAR: return argCount;
             case SymbolKind.ARG: return argCount;
         }
