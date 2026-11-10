@@ -68,7 +68,7 @@ public class SymbolTable {
             case SymbolKind.FIELD: return fieldCount;
             case SymbolKind.VAR: return varCount;
             case SymbolKind.ARG: return argCount;
+            default: return 0;
         }
-        return 0;
     }
 }
