@@ -50,6 +50,7 @@ public class SymbolTable {
 
     }
 
+    // refatorar esse método
     public Symbol resolve(String name) {
 
         if(subroutineScope.get(name) != null){
@@ -65,7 +66,7 @@ public class SymbolTable {
         switch (kind){
             case SymbolKind.STATIC: return staticCount;
             case SymbolKind.FIELD: return fieldCount;
-            case SymbolKind.VAR: return argCount;
+            case SymbolKind.VAR: return varCount;
             case SymbolKind.ARG: return argCount;
         }
         return 0;
