@@ -2,6 +2,7 @@ public class Parser {
     private Scanner scanner;
     private Token currentToken;
     private XmlWriter output = new XmlWriter();
+    private SymbolTable symbolTable = new SymbolTable();
 
 
     public Parser(byte[] input) {
@@ -79,13 +80,29 @@ public class Parser {
         return output.getOutput();
     }
 
-    private void parseType(){
+    private String parseType(){
         TokenType tk = currentToken.type;
         switch (tk){
-            case TokenType.INT -> output.writeToken(consume(TokenType.INT));
-            case TokenType.CHAR -> output.writeToken(consume(TokenType.CHAR));
-            case TokenType.BOOLEAN -> output.writeToken(consume(TokenType.BOOLEAN));
-            case TokenType.IDENT -> output.writeToken(consume(TokenType.IDENT));
+            case TokenType.INT -> {
+                Token intToken = consume(TokenType.INT);
+                output.writeToken(intToken);
+                return intToken.lexeme;
+            }
+            case TokenType.CHAR -> {
+                Token charToken = consume(TokenType.CHAR);
+                output.writeToken(charToken);
+                return charToken.lexeme;
+            }
+            case TokenType.BOOLEAN -> {
+                Token boolToken = consume(TokenType.BOOLEAN);
+                output.writeToken(boolToken);
+                return boolToken.lexeme;
+            }
+            case TokenType.IDENT -> {
+                Token identToken = consume(TokenType.IDENT);
+                output.writeToken(identToken);
+                return identToken.lexeme;
+            }
             default ->  throw new IllegalStateException("Esperado: int, char, boolean ou nome de classe; "
                     + "; Encontrado: "
                     + currentToken.type
@@ -99,19 +116,25 @@ public class Parser {
 
     private void parseClassVarDec(){
         output.openTag("classVarDec");
-
+        SymbolKind category;
         if (currentToken.type == TokenType.STATIC) {
+            category = SymbolKind.STATIC;
             output.writeToken(consume(TokenType.STATIC));
         } else {
+            category = SymbolKind.FIELD;
             output.writeToken(consume(TokenType.FIELD));
         }
 
-        parseType();
-        output.writeToken(consume(TokenType.IDENT));
+        String tipoDeclarado = parseType();
+        Token identToken = consume(TokenType.IDENT);
+        output.writeToken(identToken);
+        symbolTable.define(identToken.lexeme, tipoDeclarado, category);
 
         while(currentToken.type == TokenType.COMMA) {
             output.writeToken(consume(TokenType.COMMA));
-            output.writeToken(consume(TokenType.IDENT));
+            identToken = consume(TokenType.IDENT);
+            output.writeToken(identToken);
+            symbolTable.define(identToken.lexeme, tipoDeclarado, category);
         }
         output.writeToken(consume(TokenType.SEMICOLON));
 
