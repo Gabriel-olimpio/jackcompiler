@@ -68,11 +68,11 @@ public class Main {
         }
 
         String base = nome.substring(0, nome.length() - 5);
-        Path saida = entrada.resolveSibling(base + "P.xml");
+        Path saida = entrada.resolveSibling(base + ".vm");
 
         if (Files.exists(saida)) {
             throw new FileAlreadyExistsException(
-                "XML ja existe; preservando arquivo: " + saida
+                "VM ja existe; preservando arquivo: " + saida
             );
         }
 
