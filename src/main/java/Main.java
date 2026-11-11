@@ -1,4 +1,3 @@
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -11,14 +10,25 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
 
-        if (args.length == 2) {
-            processar(Path.of(args[0]), Path.of(args[1]));
+        // Modo XML explícito: --xml entrada.jack saida.xml
+        if (args.length == 3 && args[0].equals("--xml")) {
+            processarXml(Path.of(args[1]), Path.of(args[2]));
             return;
         }
 
+        // Dois argumentos: entrada.jack saida.xml
+        if (args.length == 2) {
+            processarXml(Path.of(args[0]), Path.of(args[1]));
+            return;
+        }
+
+        // Modo VM: um argumento
         if (args.length != 1) {
             System.err.println(
-                "Uso: java Main <arquivo.jack | pasta> [saida.xml]"
+                    "Uso:\n"
+                            + "  java Main <arquivo.jack | pasta>             (gera .vm)\n"
+                            + "  java Main <arquivo.jack> <saida.xml>         (gera XML)\n"
+                            + "  java Main --xml <arquivo.jack> <saida.xml>   (gera XML)"
             );
             System.exit(1);
             return;
@@ -35,10 +45,10 @@ public class Main {
 
             try (Stream<Path> lista = Files.list(entrada)) {
                 arquivos = lista
-                    .filter(Files::isRegularFile)
-                    .filter(p -> p.toString().endsWith(".jack"))
-                    .sorted()
-                    .toList();
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.toString().endsWith(".jack"))
+                        .sorted()
+                        .toList();
             }
 
             for (Path arquivo : arquivos) {
@@ -46,12 +56,12 @@ public class Main {
             }
 
             System.out.println(
-                "Arquivos Jack encontrados: " + arquivos.size()
+                    "Arquivos Jack encontrados: " + arquivos.size()
             );
 
         } else {
             throw new IllegalArgumentException(
-                "Arquivo ou pasta inexistente: " + entrada
+                    "Arquivo ou pasta inexistente: " + entrada
             );
         }
     }
@@ -63,7 +73,7 @@ public class Main {
 
         if (!nome.endsWith(".jack")) {
             throw new IllegalArgumentException(
-                "Arquivo precisa ter extensao .jack"
+                    "Arquivo precisa ter extensao .jack"
             );
         }
 
@@ -72,13 +82,14 @@ public class Main {
 
         if (Files.exists(saida)) {
             throw new FileAlreadyExistsException(
-                "VM ja existe; preservando arquivo: " + saida
+                    "VM ja existe; preservando arquivo: " + saida
             );
         }
 
         processar(entrada, saida);
     }
 
+    // Modo VM
     private static void processar(Path entrada, Path saida)
             throws IOException {
 
@@ -90,5 +101,19 @@ public class Main {
         Files.writeString(saida, vm, StandardCharsets.UTF_8);
 
         System.out.println("VM gerado: " + saida);
+    }
+
+    // Modo XML
+    private static void processarXml(Path entrada, Path saida)
+            throws IOException {
+
+        byte[] codigo = Files.readAllBytes(entrada);
+
+        Parser parser = new Parser(codigo);
+        String xml = parser.parse();
+
+        Files.writeString(saida, xml, StandardCharsets.UTF_8);
+
+        System.out.println("XML gerado: " + saida);
     }
 }
