@@ -71,6 +71,66 @@ public class MainIntegrationTest {
     }
 
     @Test
+    void deveAtualizarVmAoRecompilar() throws Exception {
+        Path jack = criarArquivoJack("Main");
+        Path vm = pasta.resolve("Main.vm");
+
+        Main.main(new String[]{jack.toString()});
+        String antes = Files.readString(vm);
+
+        Files.writeString(jack, """
+            class Main {
+                function void main() {
+                    do Output.printInt(7);
+                    return;
+                }
+            }
+            """);
+
+        Main.main(new String[]{jack.toString()});
+
+        String depois = Files.readString(vm);
+        assertNotEquals(antes, depois);
+        assertTrue(depois.contains("call Output.printInt 1"));
+    }
+
+    @Test
+    void naoDeveApagarVmSeCompilacaoFalhar() throws Exception {
+        Path jack = criarArquivoJack("Main");
+        Path vm = pasta.resolve("Main.vm");
+
+        Main.main(new String[]{jack.toString()});
+        String original = Files.readString(vm);
+
+        Files.writeString(jack, """
+            class Main {
+                function void main() {
+                    let x = ;
+                    return;
+                }
+            }
+            """);
+
+        assertThrows(IllegalStateException.class,
+                () -> Main.main(new String[]{jack.toString()}));
+        assertEquals(original, Files.readString(vm));
+    }
+
+    @Test
+    void deveRecompilarPastaComArquivosVmExistentes() throws Exception {
+        criarArquivoJack("Primeiro");
+        criarArquivoJack("Segundo");
+        Path primeiro = pasta.resolve("Primeiro.vm");
+        Path segundo = pasta.resolve("Segundo.vm");
+
+        Main.main(new String[]{pasta.toString()});
+        Main.main(new String[]{pasta.toString()});
+
+        assertTrue(Files.exists(primeiro));
+        assertTrue(Files.exists(segundo));
+    }
+
+    @Test
     void devePermitirNomeDeSaidaPersonalizado() throws Exception {
         Path arquivo = criarArquivoJack("Main");
         Path xml = pasta.resolve("resultado.xml");

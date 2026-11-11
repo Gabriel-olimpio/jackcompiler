@@ -33,3 +33,5 @@ target/
 # IntelliJ IDEA
 .idea/
 *.iml
+# Artefatos de testes gerados localmente
+**/*-geradoT.xml

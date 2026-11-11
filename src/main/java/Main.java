@@ -2,7 +2,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.FileAlreadyExistsException;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -79,12 +78,6 @@ public class Main {
 
         String base = nome.substring(0, nome.length() - 5);
         Path saida = entrada.resolveSibling(base + ".vm");
-
-        if (Files.exists(saida)) {
-            throw new FileAlreadyExistsException(
-                    "VM ja existe; preservando arquivo: " + saida
-            );
-        }
 
         processar(entrada, saida);
     }
