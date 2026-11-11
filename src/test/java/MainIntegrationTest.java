@@ -4,16 +4,15 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.FileAlreadyExistsException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MainIntegrationTest {
 
     @TempDir
-    Path pastaTemporaria;
+    Path pasta;
 
+    // Cria um arquivo Jack simples para os testes
     private Path criarArquivoJack(String nome) throws Exception {
         String codigo = """
             class %s {
@@ -23,30 +22,22 @@ public class MainIntegrationTest {
             }
             """.formatted(nome);
 
-        Path arquivo = pastaTemporaria.resolve(nome + ".jack");
-
-        Files.writeString(
-            arquivo, codigo, StandardCharsets.UTF_8
-        );
+        Path arquivo = pasta.resolve(nome + ".jack");
+        Files.writeString(arquivo, codigo);
 
         return arquivo;
     }
 
     @Test
     void deveProcessarArquivoJackIndividual() throws Exception {
-        Path entrada = criarArquivoJack("Main");
+        Path arquivo = criarArquivoJack("Main");
 
-        Main.main(new String[]{entrada.toString()});
+        Main.main(new String[]{arquivo.toString()});
 
-        Path saida = pastaTemporaria.resolve("MainP.xml");
+        Path vm = pasta.resolve("Main.vm");
 
-        assertTrue(Files.exists(saida));
-
-        String xml = Files.readString(saida);
-
-        assertTrue(xml.startsWith("<class>"));
-        assertTrue(xml.contains("<identifier> Main </identifier>"));
-        assertTrue(xml.contains("</class>"));
+        assertTrue(Files.exists(vm));
+        assertTrue(Files.readString(vm).contains("function Main.main"));
     }
 
     @Test
@@ -54,63 +45,40 @@ public class MainIntegrationTest {
         criarArquivoJack("Primeiro");
         criarArquivoJack("Segundo");
 
-        Main.main(new String[]{
-            pastaTemporaria.toString()
-        });
+        Main.main(new String[]{pasta.toString()});
 
-        Path primeiro = pastaTemporaria.resolve("PrimeiroP.xml");
-        Path segundo = pastaTemporaria.resolve("SegundoP.xml");
+        Path primeiro = pasta.resolve("Primeiro.vm");
+        Path segundo = pasta.resolve("Segundo.vm");
 
         assertTrue(Files.exists(primeiro));
         assertTrue(Files.exists(segundo));
 
-        String xmlPrimeiro = Files.readString(primeiro);
-        String xmlSegundo = Files.readString(segundo);
-
-        assertTrue(xmlPrimeiro.contains(
-            "<identifier> Primeiro </identifier>"
-        ));
-
-        assertTrue(xmlSegundo.contains(
-            "<identifier> Segundo </identifier>"
-        ));
+        assertTrue(Files.readString(primeiro).contains("function Primeiro.main"));
+        assertTrue(Files.readString(segundo).contains("function Segundo.main"));
     }
 
     @Test
-    void naoDeveSobrescreverXmlExistente() throws Exception {
-        Path entrada = criarArquivoJack("Main");
-        Path saida = pastaTemporaria.resolve("MainP.xml");
+    void naoDeveAlterarXmlExistente() throws Exception {
+        Path arquivo = criarArquivoJack("Main");
+        Path xml = pasta.resolve("MainP.xml");
 
-        Files.writeString(saida, "conteudo original");
+        Files.writeString(xml, "conteudo original");
 
-        assertThrows(
-            FileAlreadyExistsException.class,
-            () -> Main.main(new String[]{entrada.toString()})
-        );
+        Main.main(new String[]{arquivo.toString()});
 
-        assertEquals(
-            "conteudo original",
-            Files.readString(saida)
-        );
+        assertEquals("conteudo original", Files.readString(xml));
+        assertTrue(Files.exists(pasta.resolve("Main.vm")));
     }
 
     @Test
     void devePermitirNomeDeSaidaPersonalizado() throws Exception {
-        Path entrada = criarArquivoJack("Main");
-        Path saida = pastaTemporaria.resolve("resultado.xml");
+        Path arquivo = criarArquivoJack("Main");
+        Path xml = pasta.resolve("resultado.xml");
 
-        Main.main(new String[]{
-            entrada.toString(),
-            saida.toString()
-        });
+        Main.main(new String[]{arquivo.toString(), xml.toString()});
 
-        assertTrue(Files.exists(saida));
-
-        String xml = Files.readString(saida);
-
-        assertTrue(xml.startsWith("<class>"));
-        assertTrue(xml.contains(
-            "<identifier> Main </identifier>"
-        ));
+        assertTrue(Files.exists(xml));
+        assertTrue(Files.readString(xml).startsWith("<class>"));
+        assertTrue(Files.readString(xml).contains("<identifier> Main </identifier>"));
     }
 }
