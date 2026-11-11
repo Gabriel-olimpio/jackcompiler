@@ -84,11 +84,11 @@ public class Main {
 
         byte[] codigo = Files.readAllBytes(entrada);
 
-        Parser parser = new Parser(codigo);
-        String xml = parser.parse();
+        CompilationEngine engine = new CompilationEngine(codigo);
+        String vm = engine.compile();
 
-        Files.writeString(saida, xml, StandardCharsets.UTF_8);
+        Files.writeString(saida, vm, StandardCharsets.UTF_8);
 
-        System.out.println("XML gerado: " + saida);
+        System.out.println("VM gerado: " + saida);
     }
 }
