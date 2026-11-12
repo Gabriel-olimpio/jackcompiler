@@ -288,7 +288,7 @@ Os testes foram executados com Maven/JUnit e os programas oficiais foram verific
 
 A apresentação do projeto deve contemplar a compilação dos programas Jack, a inspeção dos arquivos VM gerados, a execução no VM Emulator e a explicação das principais decisões de implementação e do uso de IA.
 
-**Vídeo de demonstração:** inserir aqui o link da apresentação final (10 a 20 minutos, com participação dos dois integrantes).
+**Vídeo de demonstração:** [Vídeo no drive](https://drive.google.com/file/d/12JCsWsNY6hzeGkrXs5N2IeV2gHqD_TLX/view?usp=sharing)
 
 O histórico de desenvolvimento e a tag da Etapa 1 podem ser consultados no [repositório do projeto](https://github.com/Gabriel-olimpio/jackcompiler).
 
