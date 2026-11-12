@@ -240,10 +240,38 @@ Os programas foram compilados com o JackCompiler e, conforme a validação reali
 - **Arrays e strings:** traduzir operações com endereços de memória e chamadas à biblioteca Jack.
 - **Controle de fluxo:** gerar rótulos para comandos `if/else` e `while`.
 - **Testes e regressões:** atualizar testes antigos baseados em XML, ampliar a cobertura da geração VM e permitir recompilação sem perder a saída anterior quando a tradução falha.
+ 
+### Aprendizados
+
+Durante o desenvolvimento do JackCompiler, a equipe aprofundou seus conhecimentos em:
+
+- Integração entre análise léxica, sintática e geração de código.
+- Gerenciamento de escopos e variáveis por meio da tabela de símbolos.
+- Funcionamento da máquina virtual baseada em pilha.
+- Tradução de estruturas de controle, métodos, construtores e arrays.
+- Criação de testes unitários e de integração com JUnit 5.
+- Depuração e validação de programas no VM Emulator.
+- Trabalho colaborativo e versionamento com Git e GitHub.
 
 ## Uso de inteligência artificial
 
-Ferramentas de **inteligência artificial, incluindo o ChatGPT (OpenAI)**, foram utilizadas como **apoio pontual durante o desenvolvimento**.
+
+### Ferramenta e modelo utilizados
+
+- **Ferramenta:** ChatGPT, desenvolvido pela OpenAI.
+
+### Finalidade
+
+A inteligência artificial foi utilizada como apoio em partes da
+implementação da classe CompilationEngine, na elaboração e revisão
+de alguns testes automatizados e na organização do projeto.
+
+### Validação
+
+As sugestões foram revisadas e integradas pela equipe. O código
+foi validado por testes automatizados com Maven/JUnit e pela execução
+dos programas oficiais do Project 11 no VM Emulator.
+
 
 O uso incluiu:
 
