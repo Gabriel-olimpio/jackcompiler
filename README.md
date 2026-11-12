@@ -1,338 +1,139 @@
 
 # JackCompiler
 
-**Analisador Léxico e Sintático da Linguagem Jack**
+Compilador da linguagem **Jack** desenvolvido em **Java 24** para a disciplina de **Compiladores**, com base nos projetos **10 (Análise Sintática)** e **11 (Geração de Código VM)** do [nand2tetris](https://www.nand2tetris.org/).
 
-Projeto acadêmico da disciplina de Compiladores, desenvolvido em Java, com base no Project 10 do [nand2tetris](https://www.nand2tetris.org/).
-
-O projeto implementa duas etapas de análise de programas escritos na linguagem Jack:
-
-1. **Scanner:** reconhece os tokens do código-fonte.
-2. **Parser:** consome esses tokens, verifica a gramática Jack e gera uma árvore sintática representada em XML.
+O projeto realiza análise léxica e sintática de arquivos `.jack`, mantém a geração de XML para a etapa anterior e produz arquivos `.vm` executáveis na máquina virtual do nand2tetris.
 
 ## Integrantes
 
 | Integrante | Matrícula |
-|---|---|
+| --- | --- |
 | Gabriel André Barreto Olimpio dos Santos | 20260001301 |
 | Hellen Neves Barbosa | 20260001348 |
 
-## Tecnologias
+## Tecnologias utilizadas
 
-- Java 24
-- Apache Maven
-- JUnit 5
-- Visual Studio Code e IntelliJ IDEA
+- **Java 24:** implementação do compilador.
+- **Apache Maven:** compilação e gerenciamento do projeto.
+- **JUnit 5:** testes unitários e de integração.
+- **VM Emulator (nand2tetris):** execução dos programas compilados.
+- **Git e GitHub:** versionamento e colaboração.
+
+## Funcionalidades
+
+| Componente | Responsabilidade |
+| --- | --- |
+| `Scanner` | Identifica tokens, palavras-chave, símbolos, constantes e comentários. |
+| `Parser` | Analisa a gramática Jack e permite gerar a representação sintática em XML. |
+| `SymbolTable` | Gerencia símbolos de classe e sub-rotina, categorias, tipos e índices. |
+| `VMWriter` | Escreve instruções VM: pilha, operações, saltos, funções, chamadas e retornos. |
+| `CompilationEngine` | Traduz a estrutura da linguagem Jack para instruções VM. |
+| `Main` | Processa um arquivo `.jack` ou os arquivos `.jack` contidos diretamente em uma pasta. |
+
+A tradução para VM contempla:
+
+- Expressões aritméticas, lógicas e relacionais;
+- Comandos `let`, `do`, `if/else`, `while` e `return`;
+- Variáveis `static`, `field`, `argument` e `var`;
+- Funções, métodos e construtores;
+- Chamadas de sub-rotinas e chamadas entre objetos;
+- Leitura e escrita em arrays;
+- Criação e manipulação de strings com as rotinas da biblioteca Jack.
 
 ## Estrutura do projeto
 
 ```text
-src/
-├── main/
-│   └── java/
-│       ├── Main.java
-│       ├── Scanner.java
-│       ├── Parser.java
-│       ├── Token.java
-│       ├── TokenType.java
-│       └── XmlWriter.java
-└── test/
-    ├── java/
-    │   ├── ScannerTest.java
-    │   ├── ScannerXmlTest.java
-    │   ├── ParserTest.java
-    │   ├── ParserOfficialTest.java
-    │   ├── ParserExtraTest.java
-    │   ├── ParserErroTest.java
-    │   └── MainIntegrationTest.java
-    └── parser/
-        ├── Square/
-        ├── ExpressionLessSquare/
-        └── ArrayTest/
+jackcompiler/
+├── pom.xml
+├── README.md
+├── scripts/
+│   └── verificar-project11.ps1
+└── src/
+    ├── main/
+    │   └── java/
+    │       ├── Main.java
+    │       ├── Scanner.java
+    │       ├── Parser.java
+    │       ├── CompilationEngine.java
+    │       ├── SymbolTable.java
+    │       ├── Symbol.java
+    │       ├── SymbolKind.java
+    │       ├── VMWriter.java
+    │       ├── Segment.java
+    │       ├── ArithmeticCommand.java
+    │       ├── Token.java
+    │       ├── TokenType.java
+    │       └── XmlWriter.java
+    └── test/
+        ├── java/             # Testes JUnit
+        └── parser/           # Programas Jack e XMLs de referência
 ```
 
-## 1. Analisador léxico (Scanner)
+O diretório `target/` é criado pelo Maven e não precisa ser versionado.
 
-O Scanner lê o código Jack e transforma seus elementos em tokens.
+## Pré-requisitos
 
-As categorias reconhecidas incluem:
+- **JDK 24**, conforme configurado em `pom.xml`;
+- **Apache Maven**;
+- **VM Emulator** do pacote nand2tetris, para os testes funcionais.
 
-- `keyword`: palavras reservadas;
-- `symbol`: símbolos;
-- `identifier`: identificadores;
-- `integerConstant`: constantes inteiras;
-- `stringConstant`: constantes de texto.
-
-O Scanner também trata comentários e mantém informações de linha e coluna para auxiliar a identificação de erros.
-
-### Validação do Scanner
-
-O Scanner é utilizado internamente pelo Parser. Sua validação independente é realizada pelos testes JUnit.
-
-Executar testes básicos:
-
-```powershell
-mvn "-Dtest=ScannerTest" test
-```
-
-Comparar os tokens gerados com os XMLs oficiais:
-
-```powershell
-mvn "-Dtest=ScannerXmlTest" test
-```
-
-Os testes `ScannerXmlTest` comparam os tokens dos programas `Main.jack`, `Square.jack` e `SquareGame.jack` com os arquivos de referência `MainT.xml`, `SquareT.xml` e `SquareGameT.xml`.
-
-## 2. Analisador sintático (Parser)
-
-O Parser utiliza a técnica de **descida recursiva (recursive descent parsing)**.
-
-Cada estrutura principal da gramática é reconhecida por um método específico.
-
-Entre os métodos implementados estão:
-
-- `parseClass()`
-- `parseClassVarDec()`
-- `parseSubroutineDec()`
-- `parseParameterList()`
-- `parseSubroutineBody()`
-- `parseVarDec()`
-- `parseStatements()`
-- `parseLet()`
-- `parseIf()`
-- `parseWhile()`
-- `parseDo()`
-- `parseReturn()`
-- `parseExpression()`
-- `parseTerm()`
-- `parseExpressionList()`
-
-### Gramática Jack
-
-As principais regras reconhecidas incluem:
-
-```text
-class:
-  'class' className '{'
-  classVarDec* subroutineDec*
-  '}'
-
-classVarDec:
-  ('static' | 'field') type varName
-  (',' varName)* ';'
-
-subroutineDec:
-  ('constructor' | 'function' | 'method')
-  ('void' | type) subroutineName
-  '(' parameterList ')' subroutineBody
-
-parameterList:
-  (type varName (',' type varName)*)?
-
-subroutineBody:
-  '{' varDec* statements '}'
-
-varDec:
-  'var' type varName (',' varName)* ';'
-
-statements:
-  statement*
-
-statement:
-  letStatement | ifStatement |
-  whileStatement | doStatement |
-  returnStatement
-
-letStatement:
-  'let' varName ('[' expression ']')? '=' expression ';'
-
-ifStatement:
-  'if' '(' expression ')' '{' statements '}'
-  ('else' '{' statements '}')?
-
-whileStatement:
-  'while' '(' expression ')' '{' statements '}'
-
-doStatement:
-  'do' subroutineCall ';'
-
-returnStatement:
-  'return' expression? ';'
-
-expression:
-  term (op term)*
-
-term:
-  integerConstant | stringConstant | keywordConstant |
-  varName | varName '[' expression ']' | subroutineCall |
-  '(' expression ')' | unaryOp term
-
-subroutineCall:
-  subroutineName '(' expressionList ')' |
-  (className | varName) '.' subroutineName '(' expressionList ')'
-
-expressionList:
-  (expression (',' expression)*)?
-
-type:
-  'int' | 'char' | 'boolean' | className
-
-keywordConstant:
-  'true' | 'false' | 'null' | 'this'
-
-op:
-  '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='
-
-unaryOp:
-  '-' | '~'
-```
-
-O Parser também reconhece constantes, operadores unários, expressões entre parênteses, acesso a arrays e chamadas de sub-rotinas.
-
-### Expressões e operadores
-
-As expressões seguem a regra:
-
-`expression: term (op term)*`
-
-Conforme a gramática Jack, o Parser não aplica níveis tradicionais de precedência entre operadores binários. O agrupamento explícito é realizado por parênteses.
-
-### Tratamento de erros
-
-O Parser verifica os tokens esperados por meio de métodos auxiliares, como `consume()`.
-
-Quando encontra uma construção sintaticamente inválida, lança uma exceção com informações sobre o token esperado, o encontrado e a localização.
-
-Exemplo observado durante os testes:
-
-```text
-Esperado: SEMICOLON
-Encontrado: RETURN
-Lexema: return
-Linha: 6
-Coluna: 9
-```
-
-## 3. Geração do XML
-
-O `XmlWriter.java` gera as tags correspondentes à estrutura sintática reconhecida.
-
-Exemplo simplificado:
-
-```xml
-<class>
-<keyword> class </keyword>
-<identifier> Main </identifier>
-<symbol> { </symbol>
-<symbol> } </symbol>
-</class>
-```
-
-O gerador realiza o escapamento dos caracteres especiais `&`, `<`, `>` e `"`.
-
-O XML preserva a hierarquia das regras, mas não adiciona indentação visual automaticamente.
-
-## 4. Compilação e execução
-
-### Pré-requisitos
-
-- JDK 24 ou superior;
-- Apache Maven.
-
-Verificação:
+Verifique a instalação do Java e do Maven:
 
 ```powershell
 java -version
 mvn -version
 ```
 
-### Compilar o projeto
+## Como executar
 
-Na raiz do repositório:
+Abra o PowerShell na raiz do projeto, onde está o arquivo `pom.xml`.
 
-```powershell
-mvn compile
-```
-
-### Executar com um arquivo Jack
-
-É possível informar o arquivo de entrada e um nome personalizado para a saída:
+### 1. Compilar o projeto
 
 ```powershell
-java -cp target/classes Main src/test/parser/Square/Main.jack target/Main-geradoP.xml
+mvn clean compile
 ```
 
-Nesse exemplo, o XML será gerado em:
-
-`target/Main-geradoP.xml`
-
-### Executar com saída automática
-
-Ao informar apenas um arquivo `.jack`, o programa gera um XML com o padrão `XxxP.xml`, na mesma pasta do arquivo de entrada.
-
-Para testar sem sobrescrever referências oficiais, prepare uma pasta separada:
+### 2. Gerar VM de um único arquivo Jack
 
 ```powershell
-New-Item -ItemType Directory -Force target/exemplo | Out-Null
-Copy-Item src/test/parser/Square/Main.jack target/exemplo/
+java -cp target/classes Main "C:\caminho\Seven\Main.jack"
 ```
 
-Execute:
+O compilador gera `Main.vm` na mesma pasta do arquivo de entrada.
+
+### 3. Gerar VM de todos os arquivos Jack de uma pasta
 
 ```powershell
-java -cp target/classes Main target/exemplo/Main.jack
+java -cp target/classes Main "C:\caminho\projects\11\Square"
 ```
 
-Saída:
+Nesse caso, são gerados os arquivos `Main.vm`, `Square.vm` e `SquareGame.vm`.
 
-`target/exemplo/MainP.xml`
+**Observações:**
 
-### Executar com uma pasta
+- O processamento é feito somente nos arquivos `.jack` diretamente contidos na pasta; subpastas não são percorridas.
+- Arquivos `.vm` existentes podem ser atualizados em uma nova compilação.
+- A saída VM só é escrita depois de a tradução do arquivo correspondente terminar com sucesso.
 
-O programa também aceita uma pasta contendo vários arquivos `.jack`.
-
-Prepare a pasta:
+### 4. Gerar XML da análise sintática (Project 10)
 
 ```powershell
-New-Item -ItemType Directory -Force target/exemplo-pasta | Out-Null
-Copy-Item src/test/parser/Square/*.jack target/exemplo-pasta/
+java -cp target/classes Main "src/test/parser/Square/Main.jack" "target/MainP.xml"
 ```
 
-Execute:
+Também é possível usar o modo explícito:
 
 ```powershell
-java -cp target/classes Main target/exemplo-pasta
+java -cp target/classes Main --xml "src/test/parser/Square/Main.jack" "target/MainP.xml"
 ```
 
-Serão gerados arquivos como:
+**Resumo:** com um argumento, o programa gera `.vm`; com dois argumentos ou com `--xml`, gera XML.
 
-- `MainP.xml`
-- `SquareP.xml`
-- `SquareGameP.xml`
+## Testes automatizados
 
-O programa processa os arquivos `.jack` encontrados diretamente na pasta informada.
-
-**Atenção:** no modo de saída automática, um XML existente não é sobrescrito. Nesse caso, o programa informa o conflito e interrompe o processamento.
-
-## 5. Validação com arquivos oficiais
-
-A análise sintática foi validada utilizando os conjuntos do Project 10 do nand2tetris.
-
-| Conjunto | Arquivo | Resultado |
-|---|---|---|
-| Square | Main.jack | Aprovado |
-| Square | Square.jack | Aprovado |
-| Square | SquareGame.jack | Aprovado |
-| ExpressionLessSquare | Main.jack | Aprovado |
-| ExpressionLessSquare | Square.jack | Aprovado |
-| ExpressionLessSquare | SquareGame.jack | Aprovado |
-| ArrayTest | Main.jack | Aprovado |
-
-As comparações verificam a equivalência do XML produzido em relação às referências, desconsiderando diferenças de formatação previstas nos testes.
-
-## 6. Testes automatizados
-
-Os testes foram desenvolvidos com JUnit 5.
+O projeto utiliza **JUnit 5** para validar componentes isolados e o funcionamento integrado do compilador.
 
 Para executar todos os testes:
 
@@ -340,118 +141,132 @@ Para executar todos os testes:
 mvn clean test
 ```
 
-### Organização dos testes
-
-| Classe | Testes | Finalidade |
-|---|---:|---|
-| ScannerTest | 3 | Reconhecimento de tokens e comentários |
-| ScannerXmlTest | 3 | Comparação com XMLs léxicos oficiais |
-| ParserTest | 3 | Validação com Square |
-| ParserOfficialTest | 4 | Validação com ExpressionLessSquare e ArrayTest |
-| ParserErroTest | 2 | Rejeição de entradas sintaticamente inválidas |
-| ParserExtraTest | 10 | Estruturas sintáticas e erros específicos |
-| MainIntegrationTest | 4 | Execução por arquivo, pasta e geração de XML |
-| **Total** | **29** | **29 aprovados** |
-
-### Testes específicos do Parser
-
-Os testes adicionais verificam:
-
-- Funções com múltiplos parâmetros;
-- Chamadas sem argumentos;
-- Chamadas com múltiplos argumentos;
-- Leitura e escrita em arrays;
-- Operadores unários;
-- Comandos `if`, `else` e `while`;
-- Escapamento XML e constantes de texto;
-- Expressões com parênteses;
-- Ausência de chave de fechamento;
-- Expressões incompletas.
-
-Os testes verificam a organização e a sequência dos elementos XML, além dos valores dos tokens, conforme a estratégia de comparação de cada classe de teste.
-
-### Testes de integração
-
-A classe `MainIntegrationTest` verifica:
-
-- Processamento de um arquivo individual;
-- Processamento de uma pasta com dois arquivos;
-- Proteção contra sobrescrita de XML;
-- Nome personalizado para o arquivo de saída.
-
-### Resultado registrado
-
-Última execução completa em **07/11/2026**:
+**Última execução da suíte informada (11/11/2026):**
 
 ```text
-Tests run: 29
-Failures: 0
-Errors: 0
-Skipped: 0
-
+Tests run: 70, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Esse resultado corresponde aos casos efetivamente executados e não representa uma comprovação exaustiva de todos os programas possíveis da linguagem Jack.
+| Classe | Quantidade | O que verifica |
+| --- | ---: | --- |
+| `ScannerTest` | 3 | Reconhecimento de tokens. |
+| `ScannerXmlTest` | 3 | Saída léxica e referências XML. |
+| `ParserTest` | 3 | Estruturas sintáticas. |
+| `ParserOfficialTest` | 4 | Arquivos de referência. |
+| `ParserExtraTest` | 10 | Casos adicionais da gramática. |
+| `ParserErroTest` | 2 | Tratamento de entradas inválidas. |
+| `SymbolTableTest` | 10 | Escopos, categorias e índices. |
+| `VMWriterTest` | 14 | Geração de comandos VM e validação de parâmetros. |
+| `CompilationEngineVmTest` | 14 | Tradução Jack → VM, incluindo condições, laços, métodos, construtores, strings e arrays. |
+| `MainIntegrationTest` | 7 | Entrada por arquivo/pasta, recompilação e preservação de saídas em caso de erro. |
+| **Total** | **70** | **Sem falhas na execução informada.** |
 
-## 7. Limitações conhecidas
+É possível executar testes específicos pelo PowerShell:
 
-- O projeto realiza análise léxica e sintática, mas ainda não gera código VM.
-- Não realiza análise semântica nem verificação de tipos.
-- A análise sintática é interrompida no primeiro erro identificado.
-- O XML gerado não recebe indentação automática.
-- O processamento de pastas não percorre subpastas recursivamente.
-- No modo automático, arquivos `XxxP.xml` já existentes são preservados, interrompendo a execução em caso de conflito.
-- A interface `Main.java` executa o Parser; a validação independente do Scanner é disponibilizada pelos testes JUnit.
-- Na versão atual, o Scanner ainda não valida o intervalo de constantes inteiras de Jack (`0` a `32767`) nem rejeita adequadamente strings sem aspas de fechamento ou com quebra de linha.
+```powershell
+mvn "-Dtest=VMWriterTest" test
+mvn "-Dtest=SymbolTableTest" test
+mvn "-Dtest=CompilationEngineVmTest" test
+mvn "-Dtest=MainIntegrationTest" test
+```
 
-## 8. Desafios enfrentados
+Os testes automatizados verificam a geração de comandos e várias situações de tradução. A validação final também exige executar os programas compilados no VM Emulator.
 
-### Integração entre Scanner e Parser
+## Validação funcional — Project 11
 
-Garantir que o Parser consumisse corretamente os tokens do Scanner, utilizando métodos como `advance()`, `peek()`, `match()` e `consume()`.
+Foram utilizados os seis conjuntos oficiais de teste do [Project 11](https://www.nand2tetris.org/project11).
 
-### Interpretação de identificadores
+### Compilar os programas oficiais
 
-Distinguir variáveis simples (`x`), acessos a arrays (`a[i]`) e chamadas de sub-rotina (`obj.metodo()`). O método `caseIdent()` verifica os tokens seguintes para reconhecer cada construção.
+O projeto possui um script PowerShell que prepara os arquivos `.jack`, compila cada conjunto e verifica se os arquivos `.vm` correspondentes foram gerados:
 
-### Organização da descida recursiva
+```powershell
+.\scripts\verificar-project11.ps1 -PastaProject11 "C:\caminho\nand2tetris\projects\11"
+```
 
-Coordenar métodos como `parseStatements()`, `parseExpression()` e `parseTerm()`, respeitando os limites de cada estrutura da gramática Jack.
+As saídas são organizadas em:
 
-### Validação da hierarquia XML
+```text
+target/project11/
+├── Seven/
+├── ConvertToBin/
+├── Square/
+├── Average/
+├── Pong/
+└── ComplexArrays/
+```
 
-Diferenciar erros estruturais de diferenças apenas visuais de indentação, utilizando comparações automatizadas com os XMLs oficiais.
+A compilação dos seis conjuntos foi realizada com sucesso, gerando **11 arquivos `.vm`**.
 
-### Automatização dos testes
+### Resultado dos programas
 
-Ampliar a validação com JUnit 5, incluindo arquivos oficiais, estruturas específicas e entradas inválidas. A suíte passou a contar com 29 testes aprovados.
+Os resultados funcionais abaixo foram **confirmados pela equipe por meio do VM Emulator**.
 
-### Processamento de arquivos e pastas
+| Programa | Arquivos `.vm` | Verificação funcional | Status |
+| --- | ---: | --- | --- |
+| **Seven** | 1 | Exibição do valor `7` na tela. | **Aprovado** |
+| **ConvertToBin** | 1 | Conversão de valores na memória RAM; entradas `13` e `42` conferidas. | **Aprovado** |
+| **Square** | 3 | Execução do programa e interação com o quadrado. | **Aprovado** |
+| **Average** | 1 | Execução do programa de cálculo da média. | **Aprovado** |
+| **Pong** | 4 | Execução e funcionamento do jogo. | **Aprovado** |
+| **ComplexArrays** | 1 | Execução do programa e conferência dos resultados. | **Aprovado** |
 
-Adaptar o `Main.java` para aceitar arquivos `.jack` individuais e diretórios, gerar automaticamente arquivos `XxxP.xml` e preservar saídas já existentes.
+### Etapa 1 — Seven e ConvertToBin
 
-### Tratamento de erros sintáticos
+- **Seven:** o código VM foi carregado no emulador e exibiu `7`, resultado esperado de `1 + (2 * 3)`.
+- **ConvertToBin:** o programa leu um número em `RAM[8000]` e escreveu os 16 bits nas posições `RAM[8001]` até `RAM[8016]`. Foram conferidas as entradas `13` e `42`.
 
-Identificar tokens inesperados e informar o token esperado, o encontrado e sua posição (linha e coluna) no código-fonte.
+A tag Git `etapa1` é utilizada como marco da conclusão desses dois testes. Sua publicação pode ser conferida com:
 
-### Organização do repositório
+```powershell
+git tag --list etapa1
+git ls-remote --tags origin etapa1
+```
 
-Atualizar o `.gitignore` e retirar arquivos de configuração da IDE do versionamento, mantendo o repositório mais limpo e portável.
+### Etapa 2 — Square, Average, Pong e ComplexArrays
 
-## 9. Uso de Inteligência Artificial
+Nesta etapa foram verificados os recursos mais avançados da linguagem: construtores, métodos, chamadas entre objetos, arrays, strings e interação com a biblioteca Jack.
 
-Foi utilizado o **ChatGPT, da OpenAI**, como ferramenta de apoio durante o desenvolvimento e a revisão do JackCompiler. Nesta etapa de revisão, foi utilizado o modelo **GPT-6**.
+Os programas foram compilados com o JackCompiler e, conforme a validação realizada pela equipe, executados no VM Emulator.
 
-O apoio incluiu esclarecimentos sobre a gramática Jack, sugestões e revisão de testes JUnit, auxílio na identificação de erros, comparação com saídas XML de referência e organização da documentação.
+> A geração de arquivos `.vm` e a execução funcional são verificações diferentes. O script `verificar-project11.ps1` comprova a geração; o funcionamento é avaliado no VM Emulator.
 
-A dupla ficou responsável por analisar e adaptar as sugestões, integrar o código ao projeto, executar os testes e validar os resultados.
+## Desafios e decisões técnicas
 
-**Antes da entrega, os integrantes devem conferir se outros modelos de IA também foram utilizados e complementar esta declaração, se necessário.**
+- **Análise sintática e geração VM:** integrar o reconhecimento da linguagem Jack à produção de instruções para a máquina virtual.
+- **Gerenciamento de símbolos:** separar o escopo da classe e da sub-rotina, com índices independentes por categoria.
+- **Funções, métodos e construtores:** tratar os argumentos, a referência `this` e a alocação de memória de objetos.
+- **Arrays e strings:** traduzir operações com endereços de memória e chamadas à biblioteca Jack.
+- **Controle de fluxo:** gerar rótulos para comandos `if/else` e `while`.
+- **Testes e regressões:** atualizar testes antigos baseados em XML, ampliar a cobertura da geração VM e permitir recompilação sem perder a saída anterior quando a tradução falha.
 
-## 10. Referências
+## Uso de inteligência artificial
 
-- [nand2tetris](https://www.nand2tetris.org/)
-- [Project 10 — Compiler I: Syntax Analysis](https://www.nand2tetris.org/project10)
-- [Especificações da atividade no Notion](https://profsergiocosta.notion.site/JackCompiler-Analisador-sint-tico-3f2cce975093809f8d03f7ec71a8d9c1)
+Ferramentas de **inteligência artificial, incluindo o ChatGPT (OpenAI)**, foram utilizadas como **apoio pontual durante o desenvolvimento**.
 
+O uso incluiu:
+
+- **Implementação:** auxílio na elaboração e revisão de **partes da classe `CompilationEngine`**, especialmente na compreensão e tradução de construções Jack para comandos VM.
+- **Testes:** apoio na criação, revisão e organização de **alguns testes unitários e de integração**, além da interpretação de falhas e resultados.
+- **Organização do projeto:** auxílio na estruturação de atividades, planejamento das verificações e organização das etapas de desenvolvimento.
+- **Documentação:** apoio na organização e revisão deste README.
+
+As sugestões produzidas com IA foram utilizadas como material de apoio ao trabalho da equipe. A responsabilidade pela integração do código, revisão das alterações e validação dos resultados permanece com os integrantes.
+
+Os testes foram executados com Maven/JUnit e os programas oficiais foram verificados no VM Emulator.
+
+## Demonstração e entrega
+
+A apresentação do projeto deve contemplar a compilação dos programas Jack, a inspeção dos arquivos VM gerados, a execução no VM Emulator e a explicação das principais decisões de implementação e do uso de IA.
+
+**Vídeo de demonstração:** inserir aqui o link da apresentação final (10 a 20 minutos, com participação dos dois integrantes).
+
+O histórico de desenvolvimento e a tag da Etapa 1 podem ser consultados no [repositório do projeto](https://github.com/Gabriel-olimpio/jackcompiler).
+
+## Referências
+
+- [nand2tetris — Project 10: Syntax Analysis](https://www.nand2tetris.org/project10)
+- [nand2tetris — Project 11: Code Generation](https://www.nand2tetris.org/project11)
+- [nand2tetris — Software e VM Emulator](https://www.nand2tetris.org/software)
+- [Especificação da disciplina — JackCompiler: Geração de Código VM](https://profsergiocosta.notion.site/JackCompiler-Gera-o-de-c-digo-VM-400cce975093806697d5ce9da6abc62b)
